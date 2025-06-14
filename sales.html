@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게임 판매내역 관리</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js" type="module"></script>
+    <link rel="stylesheet" href="common.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">게임 아이템 관리</div>
+            <div class="navigation">
+                <a href="sales.html" class="nav-link active">게임 판매내역</a>
+                <a href="investment.html" class="nav-link">투자금 내역</a>
+                <a href="inventory.html" class="nav-link">현재 재고</a>
+            </div>
+            <div class="user-info">
+                <span id="userEmail"></span>
+                <button id="logoutBtn" class="btn btn-secondary">로그아웃</button>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <div class="section-title">
+                <span>게임 판매내역</span>
+                <div class="title-buttons">
+                    <button class="btn btn-success" onclick="openQuickInputModal()">빠른 입력</button>
+                    <button class="btn btn-primary" onclick="openSalesModal()">추가</button>
+                </div>
+            </div>
+
+            <!-- 검색창 -->
+            <div style="background: #f8f9ff; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label>검색</label>
+                        <input type="text" id="searchInput" placeholder="게임명, 서버명으로 검색..." onkeyup="filterSalesData()">
+                    </div>
+                    <div class="form-group">
+                        <label>기간 필터</label>
+                        <select id="periodFilter" onchange="filterSalesData()">
+                            <option value="all">전체</option>
+                            <option value="today">오늘</option>
+                            <option value="week">최근 1주일</option>
+                            <option value="month">최근 1개월</option>
+                            <option value="year">최근 1년</option>
+                            <option value="custom">월별 선택</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="monthFilterGroup" style="display: none;">
+                        <label>년월 선택</label>
+                        <select id="monthFilter" onchange="filterSalesData()">
+                            <option value="">선택하세요</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 통계 요약 -->
+            <div class="sales-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div class="summary-card" style="background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 15px; text-align: center;">
+                    <h4 style="margin-bottom: 10px;">총 판매금액</h4>
+                    <div class="summary-value" id="totalSalesAmount">0원</div>
+                </div>
+                <div class="summary-card" style="background: linear-gradient(45deg, #2ed573, #7bed9f); color: white; padding: 20px; border-radius: 15px; text-align: center;">
+                    <h4 style="margin-bottom: 10px;">총 수령금액</h4>
+                    <div class="summary-value" id="totalReceivedAmount">0원</div>
+                </div>
+                <div class="summary-card" style="background: linear-gradient(45deg, #ffa502, #ff6348); color: white; padding: 20px; border-radius: 15px; text-align: center;">
+                    <h4 style="margin-bottom: 10px;">총 거래 수</h4>
+                    <div class="summary-value" id="totalTransactions">0건</div>
+                </div>
+                <div class="summary-card" style="background: linear-gradient(45deg, #3742fa, #5f27cd); color: white; padding: 20px; border-radius: 15px; text-align: center;">
+                    <h4 style="margin-bottom: 10px;">평균 거래금액</h4>
+                    <div class="summary-value" id="averageTransactionAmount">0원</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="salesTable">
+                    <thead>
+                        <tr>
+                            <th>게임명</th>
+                            <th>서버명</th>
+                            <th>판매일</th>
+                            <th>다이아(아이템)개수</th>
+                            <th>판매금액</th>
+                            <th>만당(개당)금액</th>
+                            <th>수수료제외수령</th>
+                            <th>작성자/관리</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 판매내역 모달 -->
+    <div id="salesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="salesModalTitle">판매내역 추가</h3>
+                <span class="close" onclick="closeSalesModal()">&times;</span>
+            </div>
+            <form id="salesForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>게임명</label>
+                        <input type="text" id="gameName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>서버명</label>
+                        <input type="text" id="serverName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>판매일</label>
+                        <input type="date" id="saleDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>다이아(아이템)개수</label>
+                        <input type="number" id="diamondCount" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>판매금액</label>
+                        <input type="number" id="totalPrice" required>
+                    </div>
+                    <div class="form-group">
+                        <label>만당(개당)금액</label>
+                        <input type="number" id="pricePerTenThousand" readonly style="background-color: #f8f9fa;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>수수료제외수령</label>
+                    <input type="number" id="receivedAmount" required>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeSalesModal()">취소</button>
+                    <button type="submit" class="btn btn-primary" id="salesSubmitBtn">추가</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 빠른 입력 모달 -->
+    <div id="quickInputModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">빠른 입력</h3>
+                <span class="close" onclick="closeQuickInputModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>데이터 붙여넣기 (여러 줄 지원)</label>
+                <textarea id="quickInput" rows="10" placeholder="여러 줄 데이터를 붙여넣으세요&#10;예:&#10;로드나인 - 라디언트9    24년 11월 28일    72,000    80,000    576,000    547,200" style="font-family: 'Courier New', monospace;"></textarea>
+                <small style="color: #666; font-size: 12px;">
+                    엑셀에서 여러 행을 선택하여 복사 후 붙여넣기 가능
+                </small>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeQuickInputModal()">취소</button>
+                <button type="button" class="btn btn-primary" onclick="parseQuickInput()">자동 추가</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db, showNotification, checkEditPermission, hasEditPermission } from './common.js';
+        import { collection, addDoc, getDocs, deleteDoc, doc, query, updateDoc, getDoc, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        let allSalesData = [];
+        let editingDocId = null;
+        let editingType = null;
+
+        // 전역 함수로 등록
+        window.loadSalesData = loadSalesData;
+
+        // 모달 함수들 (권한 체크 포함)
+        window.openSalesModal = function(docId = null) {
+            if (!checkEditPermission('데이터 수정')) return;
+            
+            if (docId) {
+                editingDocId = docId;
+                editingType = 'sales';
+                document.getElementById('salesModalTitle').textContent = '판매내역 수정';
+                document.getElementById('salesSubmitBtn').textContent = '수정';
+                loadSalesDataForEdit(docId);
+            } else {
+                editingDocId = null;
+                editingType = null;
+                document.getElementById('salesModalTitle').textContent = '판매내역 추가';
+                document.getElementById('salesSubmitBtn').textContent = '추가';
+                document.getElementById('salesForm').reset();
+            }
+            document.getElementById('salesModal').style.display = 'block';
+            
+            setTimeout(() => {
+                setupCalculationListeners();
+            }, 100);
+        };
+
+        window.closeSalesModal = function() {
+            document.getElementById('salesModal').style.display = 'none';
+            document.getElementById('salesForm').reset();
+            editingDocId = null;
+            editingType = null;
+        };
+
+        window.openQuickInputModal = function() {
+            if (!checkEditPermission('빠른 입력')) return;
+            document.getElementById('quickInputModal').style.display = 'block';
+        };
+
+        window.closeQuickInputModal = function() {
+            document.getElementById('quickInputModal').style.display = 'none';
+            document.getElementById('quickInput').value = '';
+        };
+
+        // 수정용 데이터 로드
+        async function loadSalesDataForEdit(docId) {
+            const docRef = doc(db, 'sales', docId);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('gameName').value = data.gameName;
+                document.getElementById('serverName').value = data.serverName;
+                document.getElementById('saleDate').value = data.saleDate;
+                document.getElementById('diamondCount').value = data.diamondCount;
+                document.getElementById('totalPrice').value = data.totalPrice;
+                document.getElementById('pricePerTenThousand').value = data.pricePerTenThousand;
+                document.getElementById('receivedAmount').value = data.receivedAmount;
+                
+                setTimeout(() => {
+                    calculatePricePerItem();
+                }, 100);
+            }
+        }
+
+        // 실시간 만당금액 계산
+        function calculatePricePerItem() {
+            const diamondCount = parseInt(document.getElementById('diamondCount').value) || 0;
+            const totalPrice = parseInt(document.getElementById('totalPrice').value) || 0;
+            
+            if (diamondCount > 0 && totalPrice > 0) {
+                const pricePerItem = Math.round((totalPrice / diamondCount) * 10000);
+                document.getElementById('pricePerTenThousand').value = pricePerItem;
+            } else {
+                document.getElementById('pricePerTenThousand').value = '';
+            }
+        }
+
+        function setupCalculationListeners() {
+            const diamondCountInput = document.getElementById('diamondCount');
+            const totalPriceInput = document.getElementById('totalPrice');
+            
+            if (diamondCountInput && totalPriceInput) {
+                diamondCountInput.removeEventListener('input', calculatePricePerItem);
+                totalPriceInput.removeEventListener('input', calculatePricePerItem);
+                
+                diamondCountInput.addEventListener('input', calculatePricePerItem);
+                totalPriceInput.addEventListener('input', calculatePricePerItem);
+            }
+        }
+
+        // 폼 처리
+        document.getElementById('salesForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!checkEditPermission('데이터 저장')) return;
+            
+            const diamondCount = parseInt(document.getElementById('diamondCount').value);
+            const totalPrice = parseInt(document.getElementById('totalPrice').value);
+            
+            let pricePerTenThousand;
+            if (diamondCount > 0 && totalPrice > 0) {
+                pricePerTenThousand = Math.round((totalPrice / diamondCount) * 10000);
+            } else {
+                pricePerTenThousand = parseInt(document.getElementById('pricePerTenThousand').value) || 0;
+            }
+            
+            const salesData = {
+                userId: auth.currentUser.uid,
+                userEmail: auth.currentUser.isAnonymous ? 'guest' : auth.currentUser.email.split('@')[0],
+                gameName: document.getElementById('gameName').value,
+                serverName: document.getElementById('serverName').value,
+                saleDate: document.getElementById('saleDate').value,
+                diamondCount: diamondCount,
+                pricePerTenThousand: pricePerTenThousand,
+                totalPrice: totalPrice,
+                receivedAmount: parseInt(document.getElementById('receivedAmount').value),
+                createdAt: new Date()
+            };
+
+            try {
+                if (editingDocId && editingType === 'sales') {
+                    await updateDoc(doc(db, 'sales', editingDocId), salesData);
+                    showNotification('판매내역이 수정되었습니다.', 'success');
+                } else {
+                    await addDoc(collection(db, 'sales'), salesData);
+                    showNotification('판매내역이 추가되었습니다.', 'success');
+                }
+                closeSalesModal();
+                loadSalesData();
+            } catch (error) {
+                showNotification('데이터 저장 실패: ' + error.message, 'error');
+            }
+        });
+
+        // 데이터 로드
+        async function loadSalesData() {
+            try {
+                const q = query(collection(db, 'sales'), orderBy('saleDate', 'desc'));
+                const querySnapshot = await getDocs(q);
+                
+                allSalesData = [];
+                querySnapshot.forEach((doc) => {
+                    allSalesData.push({ id: doc.id, ...doc.data() });
+                });
+                
+                populateMonthFilter();
+                displaySalesData(allSalesData);
+                updateSalesSummary(allSalesData);
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                showNotification('데이터 로드 실패: ' + error.message, 'error');
+            }
+        }
+
+        function populateMonthFilter() {
+            const monthFilter = document.getElementById('monthFilter');
+            if (!monthFilter) return;
+            
+            monthFilter.innerHTML = '<option value="">선택하세요</option>';
+            
+            const monthSet = new Set();
+            allSalesData.forEach(item => {
+                if (item.saleDate) {
+                    const date = new Date(item.saleDate);
+                    const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    monthSet.add(yearMonth);
+                }
+            });
+            
+            const sortedMonths = Array.from(monthSet).sort((a, b) => b.localeCompare(a));
+            sortedMonths.forEach(yearMonth => {
+                const [year, month] = yearMonth.split('-');
+                const option = document.createElement('option');
+                option.value = yearMonth;
+                option.textContent = `${year}년 ${parseInt(month)}월`;
+                monthFilter.appendChild(option);
+            });
+        }
+
+        function displaySalesData(salesData) {
+            const tbody = document.querySelector('#salesTable tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            salesData.forEach((item) => {
+                const data = item;
+                const row = tbody.insertRow();
+                
+                // 권한에 따른 관리 버튼 표시
+                let actionButtons = '';
+                if (hasEditPermission()) {
+                    actionButtons = `
+                        <button class="btn btn-warning btn-small" onclick="openSalesModal('${item.id}')">수정</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteSales('${item.id}')">삭제</button>
+                    `;
+                } else {
+                    actionButtons = '<span style="color: #999; font-size: 12px;">읽기 전용</span>';
+                }
+                
+                row.innerHTML = `
+                    <td>${data.gameName}</td>
+                    <td>${data.serverName}</td>
+                    <td>${data.saleDate}</td>
+                    <td>${data.diamondCount.toLocaleString()}</td>
+                    <td>${data.totalPrice.toLocaleString()}원</td>
+                    <td>${data.pricePerTenThousand.toLocaleString()}원</td>
+                    <td>${data.receivedAmount.toLocaleString()}원</td>
+                    <td>
+                        <span style="font-size: 12px; color: #666;">${data.userEmail || '익명'}</span><br>
+                        ${actionButtons}
+                    </td>
+                `;
+            });
+        }
+
+        function updateSalesSummary(salesData) {
+            let totalSales = 0;
+            let totalReceived = 0;
+            let totalTransactions = salesData.length;
+            
+            salesData.forEach(item => {
+                totalSales += item.totalPrice || 0;
+                totalReceived += item.receivedAmount || 0;
+            });
+            
+            const averageTransaction = totalTransactions > 0 ? Math.round(totalSales / totalTransactions) : 0;
+            
+            const totalSalesElement = document.getElementById('totalSalesAmount');
+            const totalReceivedElement = document.getElementById('totalReceivedAmount');
+            const totalTransactionsElement = document.getElementById('totalTransactions');
+            const averageTransactionElement = document.getElementById('averageTransactionAmount');
+            
+            if (totalSalesElement) totalSalesElement.textContent = totalSales.toLocaleString() + '원';
+            if (totalReceivedElement) totalReceivedElement.textContent = totalReceived.toLocaleString() + '원';
+            if (totalTransactionsElement) totalTransactionsElement.textContent = totalTransactions.toLocaleString() + '건';
+            if (averageTransactionElement) averageTransactionElement.textContent = averageTransaction.toLocaleString() + '원';
+        }
+
+        // 검색 및 필터
+        window.filterSalesData = function() {
+            const searchInput = document.getElementById('searchInput');
+            const periodFilter = document.getElementById('periodFilter');
+            const monthFilter = document.getElementById('monthFilter');
+            const monthFilterGroup = document.getElementById('monthFilterGroup');
+            
+            if (!searchInput || !periodFilter || !monthFilter || !monthFilterGroup) return;
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            const periodFilterValue = periodFilter.value;
+            const monthFilterValue = monthFilter.value;
+            
+            if (periodFilterValue === 'custom') {
+                monthFilterGroup.style.display = 'block';
+            } else {
+                monthFilterGroup.style.display = 'none';
+                monthFilter.value = '';
+            }
+            
+            let filteredData = allSalesData;
+            
+            if (searchTerm) {
+                filteredData = filteredData.filter(item => 
+                    item.gameName.toLowerCase().includes(searchTerm) ||
+                    item.serverName.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (periodFilterValue !== 'all') {
+                const now = new Date();
+                
+                filteredData = filteredData.filter(item => {
+                    const itemDate = new Date(item.saleDate);
+                    
+                    switch (periodFilterValue) {
+                        case 'today':
+                            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                            return itemDate >= today;
+                        case 'week':
+                            const weekAgo = new Date(now);
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+                            return itemDate >= weekAgo;
+                        case 'month':
+                            const monthAgo = new Date(now);
+                            monthAgo.setMonth(monthAgo.getMonth() - 1);
+                            return itemDate >= monthAgo;
+                        case 'year':
+                            const yearAgo = new Date(now);
+                            yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+                            return itemDate >= yearAgo;
+                        case 'custom':
+                            if (monthFilterValue) {
+                                const [filterYear, filterMonth] = monthFilterValue.split('-');
+                                const itemYear = itemDate.getFullYear();
+                                const itemMonth = itemDate.getMonth() + 1;
+                                return itemYear == filterYear && itemMonth == filterMonth;
+                            }
+                            return true;
+                        default:
+                            return true;
+                    }
+                });
+            }
+            
+            displaySalesData(filteredData);
+            updateSalesSummary(filteredData);
+        };
+
+        // 삭제 함수
+        window.deleteSales = async function(docId) {
+            if (!checkEditPermission('데이터 삭제')) return;
+            
+            if (confirm('정말 삭제하시겠습니까?')) {
+                try {
+                    await deleteDoc(doc(db, 'sales', docId));
+                    loadSalesData();
+                    showNotification('판매내역이 삭제되었습니다.', 'success');
+                } catch (error) {
+                    showNotification('삭제 실패: ' + error.message, 'error');
+                }
+            }
+        };
+
+        // 빠른 입력 파싱
+        window.parseQuickInput = async function() {
+            if (!checkEditPermission('빠른 입력')) return;
+            
+            const input = document.getElementById('quickInput').value.trim();
+            if (!input) {
+                showNotification('데이터를 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const lines = input.split('\n').map(line => line.trim()).filter(line => line);
+                
+                if (lines.length === 0) {
+                    showNotification('유효한 데이터가 없습니다.', 'error');
+                    return;
+                }
+
+                let successCount = 0;
+                let errorCount = 0;
+
+                for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                    const line = lines[lineIndex];
+                    
+                    try {
+                        let gameName, serverName, formattedDate, diamondCount, pricePerTenThousand, totalPrice, receivedAmount;
+
+                        const tabSeparated = line.split('\t').map(item => item.trim()).filter(item => item);
+                        
+                        if (tabSeparated.length >= 6) {
+                            const gameServer = tabSeparated[0];
+                            const dateStr = tabSeparated[1];
+                            const diamondStr = tabSeparated[2];
+                            const priceStr = tabSeparated[3];
+                            const totalPriceStr = tabSeparated[4];
+                            const receivedAmountStr = tabSeparated[5];
+                            
+                            const gameServerMatch = gameServer.match(/^(.+?)\s*[-:]\s*(.+)$/);
+                            if (!gameServerMatch) {
+                                errorCount++;
+                                continue;
+                            }
+                            
+                            [, gameName, serverName] = gameServerMatch;
+                            
+                            const dateMatch = dateStr.match(/(\d{2,4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+                            if (!dateMatch) {
+                                errorCount++;
+                                continue;
+                            }
+                            
+                            const [, year, month, day] = dateMatch;
+                            const fullYear = year.length === 2 ? `20${year}` : year;
+                            formattedDate = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            
+                            if (diamondStr.includes('장신구')) {
+                                const match = diamondStr.match(/(\d+)/);
+                                diamondCount = match ? parseInt(match[1]) : 0;
+                            } else {
+                                diamondCount = parseInt(diamondStr.replace(/,/g, ''));
+                            }
+                            
+                            pricePerTenThousand = parseInt(priceStr.replace(/,/g, ''));
+                            totalPrice = parseInt(totalPriceStr.replace(/,/g, ''));
+                            receivedAmount = parseInt(receivedAmountStr.replace(/,/g, ''));
+                        } else {
+                            errorCount++;
+                            continue;
+                        }
+
+                        if (isNaN(diamondCount) || isNaN(pricePerTenThousand) || isNaN(totalPrice) || isNaN(receivedAmount)) {
+                            errorCount++;
+                            continue;
+                        }
+
+                        const salesData = {
+                            userId: auth.currentUser.uid,
+                            userEmail: auth.currentUser.isAnonymous ? 'guest' : auth.currentUser.email.split('@')[0],
+                            gameName: gameName.trim(),
+                            serverName: serverName.trim(),
+                            saleDate: formattedDate,
+                            diamondCount: diamondCount,
+                            pricePerTenThousand: pricePerTenThousand,
+                            totalPrice: totalPrice,
+                            receivedAmount: receivedAmount,
+                            createdAt: new Date()
+                        };
+
+                        await addDoc(collection(db, 'sales'), salesData);
+                        successCount++;
+
+                    } catch (error) {
+                        errorCount++;
+                        continue;
+                    }
+                }
+
+                closeQuickInputModal();
+                loadSalesData();
+                
+                if (successCount > 0 && errorCount === 0) {
+                    showNotification(`${successCount}개 데이터가 성공적으로 추가되었습니다! 🎉`, 'success');
+                } else if (successCount > 0 && errorCount > 0) {
+                    showNotification(`${successCount}개 성공, ${errorCount}개 실패했습니다.`, 'info');
+                } else {
+                    showNotification(`모든 데이터 처리에 실패했습니다.`, 'error');
+                }
+
+            } catch (error) {
+                showNotification('데이터 처리 중 오류가 발생했습니다: ' + error.message, 'error');
+            }
+        };
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            setupCalculationListeners();
+        });
+    </script>
+</body>
+</html>

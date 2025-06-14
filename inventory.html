@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>현재 재고 관리</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js" type="module"></script>
+    <link rel="stylesheet" href="common.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">게임 아이템 관리</div>
+            <div class="navigation">
+                <a href="sales.html" class="nav-link">게임 판매내역</a>
+                <a href="investment.html" class="nav-link">투자금 내역</a>
+                <a href="inventory.html" class="nav-link active">현재 재고</a>
+            </div>
+            <div class="user-info">
+                <span id="userEmail"></span>
+                <button id="logoutBtn" class="btn btn-secondary">로그아웃</button>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <div class="section-title">
+                <span>현재 재고 내역</span>
+                <div class="title-buttons">
+                    <button class="btn btn-primary" onclick="openInventoryModal()">추가</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="inventoryTable">
+                    <thead>
+                        <tr>
+                            <th>게임명</th>
+                            <th>서버</th>
+                            <th>컴퓨터명</th>
+                            <th>계정명</th>
+                            <th>다이아개수</th>
+                            <th>작성자/관리</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;" id="inventorySummary">
+                <!-- 게임/서버별 요약이 여기에 표시됩니다 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 재고 모달 -->
+    <div id="inventoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="inventoryModalTitle">재고 추가</h3>
+                <span class="close" onclick="closeInventoryModal()">&times;</span>
+            </div>
+            <form id="inventoryForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>게임명</label>
+                        <input type="text" id="invGameName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>서버</label>
+                        <input type="text" id="invServerName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>컴퓨터명</label>
+                        <input type="text" id="computerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>계정명</label>
+                        <input type="text" id="accountName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>다이아개수</label>
+                    <input type="number" id="invDiamondCount" required>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeInventoryModal()">취소</button>
+                    <button type="submit" class="btn btn-primary" id="inventorySubmitBtn">추가</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db, showNotification, checkEditPermission, hasEditPermission } from './common.js';
+        import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        let editingDocId = null;
+        let editingType = null;
+
+        // 전역 함수로 등록
+        window.loadInventoryData = loadInventoryData;
+
+        // 모달 함수들 (권한 체크 포함)
+        window.openInventoryModal = function(docId = null) {
+            if (!checkEditPermission('재고 관리')) return;
+            
+            if (docId) {
+                editingDocId = docId;
+                editingType = 'inventory';
+                document.getElementById('inventoryModalTitle').textContent = '재고 수정';
+                document.getElementById('inventorySubmitBtn').textContent = '수정';
+                loadInventoryDataForEdit(docId);
+            } else {
+                editingDocId = null;
+                editingType = null;
+                document.getElementById('inventoryModalTitle').textContent = '재고 추가';
+                document.getElementById('inventorySubmitBtn').textContent = '추가';
+                document.getElementById('inventoryForm').reset();
+            }
+            document.getElementById('inventoryModal').style.display = 'block';
+        };
+
+        window.closeInventoryModal = function() {
+            document.getElementById('inventoryModal').style.display = 'none';
+            document.getElementById('inventoryForm').reset();
+            editingDocId = null;
+            editingType = null;
+        };
+
+        // 수정용 데이터 로드
+        async function loadInventoryDataForEdit(docId) {
+            const docRef = doc(db, 'inventory', docId);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('invGameName').value = data.gameName;
+                document.getElementById('invServerName').value = data.serverName;
+                document.getElementById('computerName').value = data.computerName;
+                document.getElementById('accountName').value = data.accountName;
+                document.getElementById('invDiamondCount').value = data.diamondCount;
+            }
+        }
+
+        // 폼 처리
+        document.getElementById('inventoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!checkEditPermission('재고 저장')) return;
+            
+            const inventoryData = {
+                userId: auth.currentUser.uid,
+                userEmail: auth.currentUser.isAnonymous ? 'guest' : auth.currentUser.email.split('@')[0],
+                gameName: document.getElementById('invGameName').value,
+                serverName: document.getElementById('invServerName').value,
+                computerName: document.getElementById('computerName').value,
+                accountName: document.getElementById('accountName').value,
+                diamondCount: parseInt(document.getElementById('invDiamondCount').value),
+                createdAt: new Date()
+            };
+
+            try {
+                if (editingDocId && editingType === 'inventory') {
+                    await updateDoc(doc(db, 'inventory', editingDocId), inventoryData);
+                    showNotification('재고가 수정되었습니다.', 'success');
+                } else {
+                    await addDoc(collection(db, 'inventory'), inventoryData);
+                    showNotification('재고가 추가되었습니다.', 'success');
+                }
+                closeInventoryModal();
+                loadInventoryData();
+            } catch (error) {
+                showNotification('데이터 저장 실패: ' + error.message, 'error');
+            }
+        });
+
+        // 데이터 로드
+        async function loadInventoryData() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'inventory'));
+                
+                const tbody = document.querySelector('#inventoryTable tbody');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                const gameServerSummary = {};
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    // 권한에 따른 관리 버튼 표시
+                    let actionButtons = '';
+                    if (hasEditPermission()) {
+                        actionButtons = `
+                            <button class="btn btn-warning btn-small" onclick="openInventoryModal('${doc.id}')">수정</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteInventory('${doc.id}')">삭제</button>
+                        `;
+                    } else {
+                        actionButtons = '<span style="color: #999; font-size: 12px;">읽기 전용</span>';
+                    }
+                    
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${data.gameName}</td>
+                        <td>${data.serverName}</td>
+                        <td>${data.computerName}</td>
+                        <td>${data.accountName}</td>
+                        <td>${data.diamondCount.toLocaleString()}</td>
+                        <td>
+                            <span style="font-size: 12px; color: #666;">${data.userEmail || '익명'}</span><br>
+                            ${actionButtons}
+                        </td>
+                    `;
+                    
+                    // 게임/서버별 요약 데이터 생성
+                    const key = `${data.gameName}-${data.serverName}`;
+                    if (!gameServerSummary[key]) {
+                        gameServerSummary[key] = {
+                            gameName: data.gameName,
+                            serverName: data.serverName,
+                            totalDiamonds: 0
+                        };
+                    }
+                    gameServerSummary[key].totalDiamonds += data.diamondCount;
+                });
+                
+                // 게임/서버별 요약 표시
+                const summaryContainer = document.getElementById('inventorySummary');
+                if (summaryContainer) {
+                    summaryContainer.innerHTML = '';
+                    
+                    Object.values(gameServerSummary).forEach(summary => {
+                        const summaryCard = document.createElement('div');
+                        summaryCard.style.cssText = `
+                            background: white;
+                            padding: 20px;
+                            border-radius: 15px;
+                            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                        `;
+                        summaryCard.innerHTML = `
+                            <h4 style="color: #667eea; margin-bottom: 15px; font-size: 18px;">${summary.gameName}</h4>
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                                <span>${summary.serverName}</span>
+                                <strong>${summary.totalDiamonds.toLocaleString()} 다이아</strong>
+                            </div>
+                        `;
+                        summaryContainer.appendChild(summaryCard);
+                    });
+                }
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                showNotification('데이터 로드 실패: ' + error.message, 'error');
+            }
+        }
+
+        // 삭제 함수
+        window.deleteInventory = async function(docId) {
+            if (!checkEditPermission('재고 삭제')) return;
+            
+            if (confirm('정말 삭제하시겠습니까?')) {
+                try {
+                    await deleteDoc(doc(db, 'inventory', docId));
+                    loadInventoryData();
+                    showNotification('재고가 삭제되었습니다.', 'success');
+                } catch (error) {
+                    showNotification('삭제 실패: ' + error.message, 'error');
+                }
+            }
+        };
+    </script>
+</body>
+</html>

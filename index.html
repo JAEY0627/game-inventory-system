@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>게임 아이템 재고 관리</title>
+    <title>게임 아이템 재고 관리 - 로그인</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js" type="module"></script>
     <style>
         * {
             margin: 0;
@@ -19,97 +18,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-secondary {
-            background: #f8f9fa;
-            color: #333 !important;
-            border: 2px solid #e9ecef;
-            -webkit-text-fill-color: #333 !important;
-        }
-
-        .btn-secondary:hover {
-            background: #e9ecef;
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            color: #212529 !important;
-            -webkit-text-fill-color: #212529 !important;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-        }
-
-        .btn-small {
-            padding: 8px 12px;
-            font-size: 12px;
-            margin: 0 2px;
         }
 
         .login-container {
@@ -128,6 +36,7 @@
             background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            font-size: 28px;
         }
 
         .form-group {
@@ -141,7 +50,7 @@
             color: #555;
         }
 
-        .form-group input, .form-group select, .form-group textarea {
+        .form-group input {
             width: 100%;
             padding: 12px 16px;
             border: 2px solid #e9ecef;
@@ -150,231 +59,77 @@
             transition: border-color 0.3s ease;
         }
 
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        .form-group input:focus {
             outline: none;
             border-color: #667eea;
         }
 
-        .tabs {
-            display: flex;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 5px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab {
-            flex: 1;
-            padding: 15px 20px;
-            background: transparent;
+        .btn {
+            padding: 12px 24px;
             border: none;
             border-radius: 10px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s ease;
-            color: #666;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 10px;
         }
 
-        .tab.active {
+        .btn-primary {
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
+        }
+
+        .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
-        .content-section {
+        .btn-secondary {
+            background: linear-gradient(45deg, #2ed573, #7bed9f);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(46, 213, 115, 0.3);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e9ecef;
+        }
+
+        .divider span {
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            display: none;
-        }
-
-        .content-section.active {
-            display: block;
-        }
-
-        .section-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .section-title > span:first-child {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .title-buttons {
-            display: flex;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-
-        .title-buttons .btn {
-            color: white !important;
-            -webkit-text-fill-color: white !important;
-        }
-
-        .table-container {
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 0 15px;
+            color: #666;
             font-size: 14px;
         }
 
-        th {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            font-weight: 600;
-        }
-
-        tr:hover {
+        .guest-info {
             background: #f8f9ff;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: bold;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .close {
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #999;
-        }
-
-        .close:hover {
-            color: #333;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .investment-summary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
             text-align: center;
-        }
-
-        .investment-summary h3 {
-            margin-bottom: 10px;
-        }
-
-        .investment-summary .total {
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .inventory-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .game-summary {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .game-summary h4 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-
-        .server-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .server-item:last-child {
-            border-bottom: none;
-        }
-
-        .hidden {
-            display: none;
         }
 
         .notification {
@@ -402,61 +157,11 @@
         .notification.error {
             background: linear-gradient(45deg, #ff4757, #ff6b7a);
         }
-
-        .notification.info {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-        }
-
-        .month-selector {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .summary-value {
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .search-container {
-            background: #f8f9ff;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .month-selector select {
-            padding: 10px;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            font-size: 16px;
-        }
-
-        @media (max-width: 768px) {
-            .form-row {
-                flex-direction: column;
-            }
-            
-            .tabs {
-                flex-direction: column;
-            }
-            
-            .inventory-summary {
-                grid-template-columns: 1fr;
-            }
-
-            .modal-content {
-                width: 95%;
-                margin: 10% auto;
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- 로그인 화면 -->
-    <div id="loginScreen" class="login-container">
-        <h2>로그인</h2>
+    <div class="login-container">
+        <h2>게임 아이템 관리</h2>
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">이메일</label>
@@ -466,357 +171,23 @@
                 <label for="password">비밀번호</label>
                 <input type="password" id="password" required>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">로그인</button>
+            <button type="submit" class="btn btn-primary">로그인</button>
         </form>
-        <div style="text-align: center; margin-top: 20px;">
-            <a href="#" id="registerLink" class="btn btn-secondary">회원가입</a>
+        
+        <div class="divider">
+            <span>또는</span>
         </div>
-    </div>
-
-    <!-- 회원가입 화면 -->
-    <div id="registerScreen" class="login-container hidden">
-        <h2>회원가입</h2>
-        <form id="registerForm">
-            <div class="form-group">
-                <label for="regEmail">이메일</label>
-                <input type="email" id="regEmail" required>
-            </div>
-            <div class="form-group">
-                <label for="regPassword">비밀번호</label>
-                <input type="password" id="regPassword" required>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">회원가입</button>
-        </form>
-        <div style="text-align: center; margin-top: 20px;">
-            <a href="#" id="loginLink" class="btn btn-secondary">로그인으로 돌아가기</a>
-        </div>
-    </div>
-
-    <!-- 메인 화면 -->
-    <div id="mainScreen" class="container hidden">
-        <div class="header">
-            <div class="logo">게임 아이템 관리</div>
-            <div class="user-info">
-                <span id="userEmail"></span>
-                <button id="logoutBtn" class="btn btn-secondary">로그아웃</button>
-            </div>
-        </div>
-
-        <div class="tabs">
-            <button class="tab active" data-tab="sales">게임 판매내역</button>
-            <button class="tab" data-tab="investment">투자금 내역</button>
-            <button class="tab" data-tab="inventory">현재 재고</button>
-        </div>
-
-        <!-- 게임 판매내역 -->
-        <div id="salesSection" class="content-section active">
-            <div class="section-title">
-                <span>게임 판매내역</span>
-                <div class="title-buttons">
-                    <button class="btn btn-success" onclick="openQuickInputModal()">빠른 입력</button>
-                    <button class="btn btn-primary" onclick="openSalesModal()">추가</button>
-                </div>
-            </div>
-
-            <!-- 검색창 -->
-            <div style="background: #f8f9ff; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                <div class="form-row">
-                    <div class="form-group" style="flex: 2;">
-                        <label>검색</label>
-                        <input type="text" id="searchInput" placeholder="게임명, 서버명으로 검색..." onkeyup="filterSalesData()">
-                    </div>
-                    <div class="form-group">
-                        <label>기간 필터</label>
-                        <select id="periodFilter" onchange="filterSalesData()">
-                            <option value="all">전체</option>
-                            <option value="today">오늘</option>
-                            <option value="week">최근 1주일</option>
-                            <option value="month">최근 1개월</option>
-                            <option value="year">최근 1년</option>
-                            <option value="custom">월별 선택</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="monthFilterGroup" style="display: none;">
-                        <label>년월 선택</label>
-                        <select id="monthFilter" onchange="filterSalesData()">
-                            <option value="">선택하세요</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 통계 요약 -->
-            <div class="sales-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                <div class="summary-card" style="background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 15px; text-align: center;">
-                    <h4 style="margin-bottom: 10px;">총 판매금액</h4>
-                    <div class="summary-value" id="totalSalesAmount">0원</div>
-                </div>
-                <div class="summary-card" style="background: linear-gradient(45deg, #2ed573, #7bed9f); color: white; padding: 20px; border-radius: 15px; text-align: center;">
-                    <h4 style="margin-bottom: 10px;">총 수령금액</h4>
-                    <div class="summary-value" id="totalReceivedAmount">0원</div>
-                </div>
-                <div class="summary-card" style="background: linear-gradient(45deg, #ffa502, #ff6348); color: white; padding: 20px; border-radius: 15px; text-align: center;">
-                    <h4 style="margin-bottom: 10px;">총 거래 수</h4>
-                    <div class="summary-value" id="totalTransactions">0건</div>
-                </div>
-                <div class="summary-card" style="background: linear-gradient(45deg, #3742fa, #5f27cd); color: white; padding: 20px; border-radius: 15px; text-align: center;">
-                    <h4 style="margin-bottom: 10px;">평균 거래금액</h4>
-                    <div class="summary-value" id="averageTransactionAmount">0원</div>
-                </div>
-            </div>
-
-            <div class="table-container">
-                <table id="salesTable">
-                    <thead>
-                        <tr>
-                            <th>게임명</th>
-                            <th>서버명</th>
-                            <th>판매일</th>
-                            <th>다이아(아이템)개수</th>
-                            <th>판매금액</th>
-                            <th>만당(개당)금액</th>
-                            <th>수수료제외수령</th>
-                            <th>작성자/관리</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 투자금 내역 -->
-        <div id="investmentSection" class="content-section">
-            <div class="section-title">
-                <span>투자금 내역</span>
-                <div class="title-buttons">
-                    <button class="btn btn-primary" onclick="openInvestmentModal()">추가</button>
-                </div>
-            </div>
-            
-            <div class="month-selector">
-                <label>월별 선택:</label>
-                <select id="monthSelect">
-                    <option value="2025-01">2025년 1월</option>
-                    <option value="2025-02">2025년 2월</option>
-                    <option value="2025-03">2025년 3월</option>
-                    <option value="2025-04">2025년 4월</option>
-                    <option value="2025-05">2025년 5월</option>
-                    <option value="2025-06">2025년 6월</option>
-                    <option value="2025-07">2025년 7월</option>
-                    <option value="2025-08">2025년 8월</option>
-                    <option value="2025-09">2025년 9월</option>
-                    <option value="2025-10">2025년 10월</option>
-                    <option value="2025-11">2025년 11월</option>
-                    <option value="2025-12">2025년 12월</option>
-                </select>
-            </div>
-
-            <div class="table-container">
-                <table id="investmentTable">
-                    <thead>
-                        <tr>
-                            <th>투자종류</th>
-                            <th>금액</th>
-                            <th>메모</th>
-                            <th>작성자/관리</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-
-            <div class="investment-summary">
-                <h3>이번 달 투자금 계</h3>
-                <div class="total" id="investmentTotal">0원</div>
-            </div>
-        </div>
-
-        <!-- 현재 재고 -->
-        <div id="inventorySection" class="content-section">
-            <div class="section-title">
-                <span>현재 재고 내역</span>
-                <div class="title-buttons">
-                    <button class="btn btn-primary" onclick="openInventoryModal()">추가</button>
-                </div>
-            </div>
-
-            <div class="table-container">
-                <table id="inventoryTable">
-                    <thead>
-                        <tr>
-                            <th>게임명</th>
-                            <th>서버</th>
-                            <th>컴퓨터명</th>
-                            <th>계정명</th>
-                            <th>다이아개수</th>
-                            <th>작성자/관리</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-
-            <div class="inventory-summary" id="inventorySummary">
-                <!-- 게임/서버별 요약이 여기에 표시됩니다 -->
-            </div>
-        </div>
-    </div>
-
-    <!-- 판매내역 모달 -->
-    <div id="salesModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="salesModalTitle">판매내역 추가</h3>
-                <span class="close" onclick="closeSalesModal()">&times;</span>
-            </div>
-            <form id="salesForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>게임명</label>
-                        <input type="text" id="gameName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>서버명</label>
-                        <input type="text" id="serverName" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>판매일</label>
-                        <input type="date" id="saleDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label>다이아(아이템)개수</label>
-                        <input type="number" id="diamondCount" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>판매금액</label>
-                        <input type="number" id="totalPrice" required>
-                    </div>
-                    <div class="form-group">
-                        <label>만당(개당)금액</label>
-                        <input type="number" id="pricePerTenThousand" readonly style="background-color: #f8f9fa;">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>수수료제외수령</label>
-                    <input type="number" id="receivedAmount" required>
-                </div>
-                <div style="text-align: right; margin-top: 20px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeSalesModal()">취소</button>
-                    <button type="submit" class="btn btn-primary" id="salesSubmitBtn">추가</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 빠른 입력 모달 -->
-    <div id="quickInputModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">빠른 입력</h3>
-                <span class="close" onclick="closeQuickInputModal()">&times;</span>
-            </div>
-            <div class="form-group">
-                <label>데이터 붙여넣기 (여러 줄 지원)</label>
-                <textarea id="quickInput" rows="10" placeholder="여러 줄 데이터를 붙여넣으세요&#10;예:&#10;로드나인 - 라디언트9    24년 11월 28일    72,000    80,000    576,000    547,200" style="font-family: 'Courier New', monospace;"></textarea>
-                <small style="color: #666; font-size: 12px;">
-                    엑셀에서 여러 행을 선택하여 복사 후 붙여넣기 가능
-                </small>
-            </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button type="button" class="btn btn-secondary" onclick="closeQuickInputModal()">취소</button>
-                <button type="button" class="btn btn-primary" onclick="parseQuickInput()">자동 추가</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 투자금 모달 -->
-    <div id="investmentModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="investmentModalTitle">투자금 내역 추가</h3>
-                <span class="close" onclick="closeInvestmentModal()">&times;</span>
-            </div>
-            <form id="investmentForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>투자종류</label>
-                        <select id="investmentType" required>
-                            <option value="">선택하세요</option>
-                            <option value="구글기프트카드">구글기프트카드</option>
-                            <option value="사전쿠폰구매(린M)">사전쿠폰구매(린M)</option>
-                            <option value="전기세">전기세</option>
-                            <option value="인터넷비용">인터넷비용</option>
-                            <option value="프로그램(보안)비용">프로그램(보안)비용</option>
-                            <option value="누나정산">누나정산</option>
-                            <option value="기타">기타</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>금액</label>
-                        <input type="number" id="investmentAmount" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>메모</label>
-                    <input type="text" id="investmentMemo">
-                </div>
-                <div style="text-align: right; margin-top: 20px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeInvestmentModal()">취소</button>
-                    <button type="submit" class="btn btn-primary" id="investmentSubmitBtn">추가</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 재고 모달 -->
-    <div id="inventoryModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="inventoryModalTitle">재고 추가</h3>
-                <span class="close" onclick="closeInventoryModal()">&times;</span>
-            </div>
-            <form id="inventoryForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>게임명</label>
-                        <input type="text" id="invGameName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>서버</label>
-                        <input type="text" id="invServerName" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>컴퓨터명</label>
-                        <input type="text" id="computerName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>계정명</label>
-                        <input type="text" id="accountName" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>다이아개수</label>
-                    <input type="number" id="invDiamondCount" required>
-                </div>
-                <div style="text-align: right; margin-top: 20px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeInventoryModal()">취소</button>
-                    <button type="submit" class="btn btn-primary" id="inventorySubmitBtn">추가</button>
-                </div>
-            </form>
+        
+        <button type="button" class="btn btn-secondary" id="guestLoginBtn">게스트로 둘러보기</button>
+        
+        <div class="guest-info">
+            💡 게스트 모드에서는 데이터 조회만 가능하며, 추가/수정/삭제 기능은 제한됩니다.
         </div>
     </div>
 
     <script type="module">
-        // Firebase 설정
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, updateDoc, getDoc, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyBOikXWOMg3uj-f_kdnXh394sVDHMtboaE",
@@ -829,59 +200,16 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
 
-        let currentUser = null;
-        let currentMonth = '2025-06';
-        let editingDocId = null;
-        let editingType = null;
-
-        // DOM 요소들
-        const loginScreen = document.getElementById('loginScreen');
-        const registerScreen = document.getElementById('registerScreen');
-        const mainScreen = document.getElementById('mainScreen');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const userEmail = document.getElementById('userEmail');
-        const registerLink = document.getElementById('registerLink');
-        const loginLink = document.getElementById('loginLink');
-        const monthSelect = document.getElementById('monthSelect');
-
-        // 인증 상태 변경 감지
+        // 이미 로그인된 사용자는 메인 페이지로 리다이렉트
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                currentUser = user;
-                userEmail.textContent = user.email;
-                showMainScreen();
-                loadAllData();
-            } else {
-                currentUser = null;
-                showLoginScreen();
+                window.location.href = 'sales.html';
             }
         });
 
-        // 화면 전환 함수들
-        function showLoginScreen() {
-            loginScreen.classList.remove('hidden');
-            registerScreen.classList.add('hidden');
-            mainScreen.classList.add('hidden');
-        }
-
-        function showRegisterScreen() {
-            loginScreen.classList.add('hidden');
-            registerScreen.classList.remove('hidden');
-            mainScreen.classList.add('hidden');
-        }
-
-        function showMainScreen() {
-            loginScreen.classList.add('hidden');
-            registerScreen.classList.add('hidden');
-            mainScreen.classList.remove('hidden');
-        }
-
-        // 로그인/회원가입 이벤트
-        loginForm.addEventListener('submit', async (e) => {
+        // 일반 로그인 폼 처리
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -889,739 +217,26 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 showNotification('로그인 성공!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'sales.html';
+                }, 1000);
             } catch (error) {
                 showNotification('로그인 실패: ' + error.message, 'error');
             }
         });
 
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPassword').value;
-
+        // 게스트 로그인 처리
+        document.getElementById('guestLoginBtn').addEventListener('click', async () => {
             try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                showNotification('회원가입 성공!', 'success');
+                await signInAnonymously(auth);
+                showNotification('게스트로 로그인되었습니다!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'sales.html';
+                }, 1000);
             } catch (error) {
-                showNotification('회원가입 실패: ' + error.message, 'error');
+                showNotification('게스트 로그인 실패: ' + error.message, 'error');
             }
         });
-
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth);
-        });
-
-        registerLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showRegisterScreen();
-        });
-
-        loginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showLoginScreen();
-        });
-
-        // 탭 전환
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabName = tab.dataset.tab;
-                
-                // 탭 활성화
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                // 섹션 전환
-                document.querySelectorAll('.content-section').forEach(section => {
-                    section.classList.remove('active');
-                });
-                document.getElementById(tabName + 'Section').classList.add('active');
-                
-                // 데이터 로드
-                if (tabName === 'investment') {
-                    loadInvestmentData();
-                }
-            });
-        });
-
-        // 월 선택 변경
-        monthSelect.addEventListener('change', (e) => {
-            currentMonth = e.target.value;
-            loadInvestmentData();
-        });
-
-        // 모달 함수들
-        window.openSalesModal = function(docId = null) {
-            if (docId) {
-                editingDocId = docId;
-                editingType = 'sales';
-                document.getElementById('salesModalTitle').textContent = '판매내역 수정';
-                document.getElementById('salesSubmitBtn').textContent = '수정';
-                loadSalesDataForEdit(docId);
-            } else {
-                editingDocId = null;
-                editingType = null;
-                document.getElementById('salesModalTitle').textContent = '판매내역 추가';
-                document.getElementById('salesSubmitBtn').textContent = '추가';
-                document.getElementById('salesForm').reset();
-            }
-            document.getElementById('salesModal').style.display = 'block';
-        };
-
-        window.closeSalesModal = function() {
-            document.getElementById('salesModal').style.display = 'none';
-            document.getElementById('salesForm').reset();
-            editingDocId = null;
-            editingType = null;
-        };
-
-        window.openQuickInputModal = function() {
-            document.getElementById('quickInputModal').style.display = 'block';
-        };
-
-        window.closeQuickInputModal = function() {
-            document.getElementById('quickInputModal').style.display = 'none';
-            document.getElementById('quickInput').value = '';
-        };
-
-        window.openInvestmentModal = function(docId = null) {
-            if (docId) {
-                editingDocId = docId;
-                editingType = 'investment';
-                document.getElementById('investmentModalTitle').textContent = '투자금 내역 수정';
-                document.getElementById('investmentSubmitBtn').textContent = '수정';
-                loadInvestmentDataForEdit(docId);
-            } else {
-                editingDocId = null;
-                editingType = null;
-                document.getElementById('investmentModalTitle').textContent = '투자금 내역 추가';
-                document.getElementById('investmentSubmitBtn').textContent = '추가';
-                document.getElementById('investmentForm').reset();
-            }
-            document.getElementById('investmentModal').style.display = 'block';
-        };
-
-        window.closeInvestmentModal = function() {
-            document.getElementById('investmentModal').style.display = 'none';
-            document.getElementById('investmentForm').reset();
-            editingDocId = null;
-            editingType = null;
-        };
-
-        window.openInventoryModal = function(docId = null) {
-            if (docId) {
-                editingDocId = docId;
-                editingType = 'inventory';
-                document.getElementById('inventoryModalTitle').textContent = '재고 수정';
-                document.getElementById('inventorySubmitBtn').textContent = '수정';
-                loadInventoryDataForEdit(docId);
-            } else {
-                editingDocId = null;
-                editingType = null;
-                document.getElementById('inventoryModalTitle').textContent = '재고 추가';
-                document.getElementById('inventorySubmitBtn').textContent = '추가';
-                document.getElementById('inventoryForm').reset();
-            }
-            document.getElementById('inventoryModal').style.display = 'block';
-        };
-
-        window.closeInventoryModal = function() {
-            document.getElementById('inventoryModal').style.display = 'none';
-            document.getElementById('inventoryForm').reset();
-            editingDocId = null;
-            editingType = null;
-        };
-
-        // 수정용 데이터 로드 함수들
-        async function loadSalesDataForEdit(docId) {
-            const docRef = doc(db, 'sales', docId);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('gameName').value = data.gameName;
-                document.getElementById('serverName').value = data.serverName;
-                document.getElementById('saleDate').value = data.saleDate;
-                document.getElementById('diamondCount').value = data.diamondCount;
-                document.getElementById('totalPrice').value = data.totalPrice;
-                document.getElementById('pricePerTenThousand').value = data.pricePerTenThousand;
-                document.getElementById('receivedAmount').value = data.receivedAmount;
-            }
-        }
-
-        async function loadInvestmentDataForEdit(docId) {
-            const docRef = doc(db, 'investments', docId);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('investmentType').value = data.type;
-                document.getElementById('investmentAmount').value = data.amount;
-                document.getElementById('investmentMemo').value = data.memo;
-            }
-        }
-
-        async function loadInventoryDataForEdit(docId) {
-            const docRef = doc(db, 'inventory', docId);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('invGameName').value = data.gameName;
-                document.getElementById('invServerName').value = data.serverName;
-                document.getElementById('computerName').value = data.computerName;
-                document.getElementById('accountName').value = data.accountName;
-                document.getElementById('invDiamondCount').value = data.diamondCount;
-            }
-        }
-
-        // 판매내역 폼 처리
-        document.getElementById('salesForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const diamondCount = parseInt(document.getElementById('diamondCount').value);
-            const totalPrice = parseInt(document.getElementById('totalPrice').value);
-            const pricePerTenThousand = Math.round(totalPrice / diamondCount);
-            
-            const salesData = {
-                userId: currentUser.uid,
-                userEmail: currentUser.email.split('@')[0],
-                gameName: document.getElementById('gameName').value,
-                serverName: document.getElementById('serverName').value,
-                saleDate: document.getElementById('saleDate').value,
-                diamondCount: diamondCount,
-                pricePerTenThousand: pricePerTenThousand,
-                totalPrice: totalPrice,
-                receivedAmount: parseInt(document.getElementById('receivedAmount').value),
-                createdAt: new Date()
-            };
-
-            try {
-                if (editingDocId && editingType === 'sales') {
-                    await updateDoc(doc(db, 'sales', editingDocId), salesData);
-                    showNotification('판매내역이 수정되었습니다.', 'success');
-                } else {
-                    await addDoc(collection(db, 'sales'), salesData);
-                    showNotification('판매내역이 추가되었습니다.', 'success');
-                }
-                closeSalesModal();
-                loadSalesData();
-            } catch (error) {
-                showNotification('데이터 저장 실패: ' + error.message, 'error');
-            }
-        });
-
-        // 투자금 폼 처리
-        document.getElementById('investmentForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const investmentData = {
-                userId: currentUser.uid,
-                userEmail: currentUser.email.split('@')[0],
-                month: currentMonth,
-                type: document.getElementById('investmentType').value,
-                amount: parseInt(document.getElementById('investmentAmount').value),
-                memo: document.getElementById('investmentMemo').value,
-                createdAt: new Date()
-            };
-
-            try {
-                if (editingDocId && editingType === 'investment') {
-                    await updateDoc(doc(db, 'investments', editingDocId), investmentData);
-                    showNotification('투자금 내역이 수정되었습니다.', 'success');
-                } else {
-                    await addDoc(collection(db, 'investments'), investmentData);
-                    showNotification('투자금 내역이 추가되었습니다.', 'success');
-                }
-                closeInvestmentModal();
-                loadInvestmentData();
-            } catch (error) {
-                showNotification('데이터 저장 실패: ' + error.message, 'error');
-            }
-        });
-
-        // 재고 폼 처리
-        document.getElementById('inventoryForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const inventoryData = {
-                userId: currentUser.uid,
-                userEmail: currentUser.email.split('@')[0],
-                gameName: document.getElementById('invGameName').value,
-                serverName: document.getElementById('invServerName').value,
-                computerName: document.getElementById('computerName').value,
-                accountName: document.getElementById('accountName').value,
-                diamondCount: parseInt(document.getElementById('invDiamondCount').value),
-                createdAt: new Date()
-            };
-
-            try {
-                if (editingDocId && editingType === 'inventory') {
-                    await updateDoc(doc(db, 'inventory', editingDocId), inventoryData);
-                    showNotification('재고가 수정되었습니다.', 'success');
-                } else {
-                    await addDoc(collection(db, 'inventory'), inventoryData);
-                    showNotification('재고가 추가되었습니다.', 'success');
-                }
-                closeInventoryModal();
-                loadInventoryData();
-            } catch (error) {
-                showNotification('데이터 저장 실패: ' + error.message, 'error');
-            }
-        });
-
-        // 실시간 만당금액 계산
-        function calculatePricePerItem() {
-            const diamondCount = parseInt(document.getElementById('diamondCount').value) || 0;
-            const totalPrice = parseInt(document.getElementById('totalPrice').value) || 0;
-            
-            if (diamondCount > 0 && totalPrice > 0) {
-                const pricePerItem = Math.round(totalPrice / diamondCount);
-                document.getElementById('pricePerTenThousand').value = pricePerItem;
-            } else {
-                document.getElementById('pricePerTenThousand').value = '';
-            }
-        }
-
-        // 이벤트 리스너 추가
-        document.getElementById('diamondCount').addEventListener('input', calculatePricePerItem);
-        document.getElementById('totalPrice').addEventListener('input', calculatePricePerItem);
-
-        // 데이터 로드 함수들
-        let allSalesData = []; // 전체 판매 데이터를 저장할 변수
-
-        async function loadSalesData() {
-            const q = query(collection(db, 'sales'), orderBy('saleDate', 'desc'));
-            const querySnapshot = await getDocs(q);
-            
-            allSalesData = []; // 데이터 초기화
-            querySnapshot.forEach((doc) => {
-                allSalesData.push({ id: doc.id, ...doc.data() });
-            });
-            
-            populateMonthFilter(); // 월별 필터 옵션 생성
-            displaySalesData(allSalesData);
-            updateSalesSummary(allSalesData);
-        }
-
-        function populateMonthFilter() {
-            const monthFilter = document.getElementById('monthFilter');
-            monthFilter.innerHTML = '<option value="">선택하세요</option>';
-            
-            // 모든 데이터에서 년월 추출
-            const monthSet = new Set();
-            allSalesData.forEach(item => {
-                if (item.saleDate) {
-                    const date = new Date(item.saleDate);
-                    const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                    monthSet.add(yearMonth);
-                }
-            });
-            
-            // 년월을 내림차순으로 정렬하여 옵션 추가
-            const sortedMonths = Array.from(monthSet).sort((a, b) => b.localeCompare(a));
-            sortedMonths.forEach(yearMonth => {
-                const [year, month] = yearMonth.split('-');
-                const option = document.createElement('option');
-                option.value = yearMonth;
-                option.textContent = `${year}년 ${parseInt(month)}월`;
-                monthFilter.appendChild(option);
-            });
-        }
-
-        function displaySalesData(salesData) {
-            const tbody = document.querySelector('#salesTable tbody');
-            tbody.innerHTML = '';
-            
-            salesData.forEach((item) => {
-                const data = item;
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${data.gameName}</td>
-                    <td>${data.serverName}</td>
-                    <td>${data.saleDate}</td>
-                    <td>${data.diamondCount.toLocaleString()}</td>
-                    <td>${data.totalPrice.toLocaleString()}원</td>
-                    <td>${data.pricePerTenThousand.toLocaleString()}원</td>
-                    <td>${data.receivedAmount.toLocaleString()}원</td>
-                    <td>
-                        <span style="font-size: 12px; color: #666;">${data.userEmail || '익명'}</span><br>
-                        <button class="btn btn-warning btn-small" onclick="openSalesModal('${item.id}')">수정</button>
-                        <button class="btn btn-danger btn-small" onclick="deleteSales('${item.id}')">삭제</button>
-                    </td>
-                `;
-            });
-        }
-
-        function updateSalesSummary(salesData) {
-            let totalSales = 0;
-            let totalReceived = 0;
-            let totalTransactions = salesData.length;
-            
-            salesData.forEach(item => {
-                totalSales += item.totalPrice || 0;
-                totalReceived += item.receivedAmount || 0;
-            });
-            
-            const averageTransaction = totalTransactions > 0 ? Math.round(totalSales / totalTransactions) : 0;
-            
-            document.getElementById('totalSalesAmount').textContent = totalSales.toLocaleString() + '원';
-            document.getElementById('totalReceivedAmount').textContent = totalReceived.toLocaleString() + '원';
-            document.getElementById('totalTransactions').textContent = totalTransactions.toLocaleString() + '건';
-            document.getElementById('averageTransactionAmount').textContent = averageTransaction.toLocaleString() + '원';
-        }
-
-        // 검색 및 필터 함수
-        window.filterSalesData = function() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const periodFilter = document.getElementById('periodFilter').value;
-            const monthFilter = document.getElementById('monthFilter').value;
-            
-            // 월별 선택 필터 표시/숨김
-            const monthFilterGroup = document.getElementById('monthFilterGroup');
-            if (periodFilter === 'custom') {
-                monthFilterGroup.style.display = 'block';
-            } else {
-                monthFilterGroup.style.display = 'none';
-                document.getElementById('monthFilter').value = '';
-            }
-            
-            let filteredData = allSalesData;
-            
-            // 텍스트 검색 필터
-            if (searchTerm) {
-                filteredData = filteredData.filter(item => 
-                    item.gameName.toLowerCase().includes(searchTerm) ||
-                    item.serverName.toLowerCase().includes(searchTerm)
-                );
-            }
-            
-            // 기간 필터
-            if (periodFilter !== 'all') {
-                const now = new Date();
-                
-                filteredData = filteredData.filter(item => {
-                    const itemDate = new Date(item.saleDate);
-                    
-                    switch (periodFilter) {
-                        case 'today':
-                            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                            return itemDate >= today;
-                        case 'week':
-                            const weekAgo = new Date(now);
-                            weekAgo.setDate(weekAgo.getDate() - 7);
-                            return itemDate >= weekAgo;
-                        case 'month':
-                            const monthAgo = new Date(now);
-                            monthAgo.setMonth(monthAgo.getMonth() - 1);
-                            return itemDate >= monthAgo;
-                        case 'year':
-                            const yearAgo = new Date(now);
-                            yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-                            return itemDate >= yearAgo;
-                        case 'custom':
-                            if (monthFilter) {
-                                const [filterYear, filterMonth] = monthFilter.split('-');
-                                const itemYear = itemDate.getFullYear();
-                                const itemMonth = itemDate.getMonth() + 1;
-                                return itemYear == filterYear && itemMonth == filterMonth;
-                            }
-                            return true;
-                        default:
-                            return true;
-                    }
-                });
-            }
-            
-            displaySalesData(filteredData);
-            updateSalesSummary(filteredData);
-        };
-
-        async function loadInvestmentData() {
-            const q = query(collection(db, 'investments'), where('month', '==', currentMonth));
-            const querySnapshot = await getDocs(q);
-            
-            const tbody = document.querySelector('#investmentTable tbody');
-            tbody.innerHTML = '';
-            
-            let total = 0;
-            
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                total += data.amount;
-                
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${data.type}</td>
-                    <td>${data.amount.toLocaleString()}원</td>
-                    <td>${data.memo}</td>
-                    <td>
-                        <span style="font-size: 12px; color: #666;">${data.userEmail || '익명'}</span><br>
-                        <button class="btn btn-warning btn-small" onclick="openInvestmentModal('${doc.id}')">수정</button>
-                        <button class="btn btn-danger btn-small" onclick="deleteInvestment('${doc.id}')">삭제</button>
-                    </td>
-                `;
-            });
-            
-            document.getElementById('investmentTotal').textContent = total.toLocaleString() + '원';
-        }
-
-        async function loadInventoryData() {
-            const querySnapshot = await getDocs(collection(db, 'inventory'));
-            
-            const tbody = document.querySelector('#inventoryTable tbody');
-            tbody.innerHTML = '';
-            
-            const gameServerSummary = {};
-            
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${data.gameName}</td>
-                    <td>${data.serverName}</td>
-                    <td>${data.computerName}</td>
-                    <td>${data.accountName}</td>
-                    <td>${data.diamondCount.toLocaleString()}</td>
-                    <td>
-                        <span style="font-size: 12px; color: #666;">${data.userEmail || '익명'}</span><br>
-                        <button class="btn btn-warning btn-small" onclick="openInventoryModal('${doc.id}')">수정</button>
-                        <button class="btn btn-danger btn-small" onclick="deleteInventory('${doc.id}')">삭제</button>
-                    </td>
-                `;
-                
-                // 게임/서버별 요약 데이터 생성
-                const key = `${data.gameName}-${data.serverName}`;
-                if (!gameServerSummary[key]) {
-                    gameServerSummary[key] = {
-                        gameName: data.gameName,
-                        serverName: data.serverName,
-                        totalDiamonds: 0
-                    };
-                }
-                gameServerSummary[key].totalDiamonds += data.diamondCount;
-            });
-            
-            // 게임/서버별 요약 표시
-            const summaryContainer = document.getElementById('inventorySummary');
-            summaryContainer.innerHTML = '';
-            
-            Object.values(gameServerSummary).forEach(summary => {
-                const summaryCard = document.createElement('div');
-                summaryCard.className = 'game-summary';
-                summaryCard.innerHTML = `
-                    <h4>${summary.gameName}</h4>
-                    <div class="server-item">
-                        <span>${summary.serverName}</span>
-                        <strong>${summary.totalDiamonds.toLocaleString()} 다이아</strong>
-                    </div>
-                `;
-                summaryContainer.appendChild(summaryCard);
-            });
-        }
-
-        async function loadAllData() {
-            await loadSalesData();
-            await loadInvestmentData();
-            await loadInventoryData();
-        }
-
-        // 삭제 함수들
-        window.deleteSales = async function(docId) {
-            if (confirm('정말 삭제하시겠습니까?')) {
-                try {
-                    await deleteDoc(doc(db, 'sales', docId));
-                    loadSalesData();
-                    showNotification('판매내역이 삭제되었습니다.', 'success');
-                } catch (error) {
-                    showNotification('삭제 실패: ' + error.message, 'error');
-                }
-            }
-        };
-
-        window.deleteInvestment = async function(docId) {
-            if (confirm('정말 삭제하시겠습니까?')) {
-                try {
-                    await deleteDoc(doc(db, 'investments', docId));
-                    loadInvestmentData();
-                    showNotification('투자금 내역이 삭제되었습니다.', 'success');
-                } catch (error) {
-                    showNotification('삭제 실패: ' + error.message, 'error');
-                }
-            }
-        };
-
-        window.deleteInventory = async function(docId) {
-            if (confirm('정말 삭제하시겠습니까?')) {
-                try {
-                    await deleteDoc(doc(db, 'inventory', docId));
-                    loadInventoryData();
-                    showNotification('재고가 삭제되었습니다.', 'success');
-                } catch (error) {
-                    showNotification('삭제 실패: ' + error.message, 'error');
-                }
-            }
-        };
-
-        // 빠른 입력 파싱 함수
-        window.parseQuickInput = async function() {
-            const input = document.getElementById('quickInput').value.trim();
-            if (!input) {
-                showNotification('데이터를 입력해주세요.', 'error');
-                return;
-            }
-
-            try {
-                // 여러 줄로 분리
-                const lines = input.split('\n').map(line => line.trim()).filter(line => line);
-                
-                if (lines.length === 0) {
-                    showNotification('유효한 데이터가 없습니다.', 'error');
-                    return;
-                }
-
-                let successCount = 0;
-                let errorCount = 0;
-                const errors = [];
-
-                // 각 줄을 순차적으로 처리
-                const processLine = async (lineIndex) => {
-                    if (lineIndex >= lines.length) {
-                        // 모든 처리 완료
-                        closeQuickInputModal();
-                        loadSalesData();
-                        
-                        if (successCount > 0 && errorCount === 0) {
-                            showNotification(`${successCount}개 데이터가 성공적으로 추가되었습니다! 🎉`, 'success');
-                        } else if (successCount > 0 && errorCount > 0) {
-                            showNotification(`${successCount}개 성공, ${errorCount}개 실패했습니다.`, 'info');
-                        } else {
-                            showNotification(`모든 데이터 처리에 실패했습니다.`, 'error');
-                        }
-                        return;
-                    }
-
-                    const line = lines[lineIndex];
-                    
-                    try {
-                        let gameName, serverName, formattedDate, diamondCount, pricePerTenThousand, totalPrice, receivedAmount;
-
-                        // 탭으로 구분된 데이터 먼저 시도
-                        const tabSeparated = line.split('\t').map(item => item.trim()).filter(item => item);
-                        
-                        if (tabSeparated.length >= 6) {
-                            // 탭 구분 형식 처리
-                            const gameServer = tabSeparated[0];
-                            const dateStr = tabSeparated[1];
-                            const diamondStr = tabSeparated[2];
-                            const priceStr = tabSeparated[3];
-                            const totalPriceStr = tabSeparated[4];
-                            const receivedAmountStr = tabSeparated[5];
-                            
-                            // 게임명과 서버명 분리
-                            const gameServerMatch = gameServer.match(/^(.+?)\s*[-:]\s*(.+)$/);
-                            if (!gameServerMatch) {
-                                errors.push(`줄 ${lineIndex + 1}: 게임명 - 서버명 형식 오류`);
-                                errorCount++;
-                                processLine(lineIndex + 1);
-                                return;
-                            }
-                            
-                            [, gameName, serverName] = gameServerMatch;
-                            
-                            // 날짜 파싱
-                            const dateMatch = dateStr.match(/(\d{2,4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
-                            if (!dateMatch) {
-                                errors.push(`줄 ${lineIndex + 1}: 날짜 형식 오류`);
-                                errorCount++;
-                                processLine(lineIndex + 1);
-                                return;
-                            }
-                            
-                            const [, year, month, day] = dateMatch;
-                            const fullYear = year.length === 2 ? `20${year}` : year;
-                            formattedDate = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                            
-                            // 다이아개수 처리 (장신구 등 특수 케이스 처리)
-                            if (diamondStr.includes('장신구')) {
-                                const match = diamondStr.match(/(\d+)/);
-                                diamondCount = match ? parseInt(match[1]) : 0;
-                            } else {
-                                diamondCount = parseInt(diamondStr.replace(/,/g, ''));
-                            }
-                            
-                            pricePerTenThousand = parseInt(priceStr.replace(/,/g, ''));
-                            totalPrice = parseInt(totalPriceStr.replace(/,/g, ''));
-                            receivedAmount = parseInt(receivedAmountStr.replace(/,/g, ''));
-                            
-                        } else {
-                            // 연속 형식 처리 (스페이스나 기타 구분자로 구분된 경우)
-                            const regex = /^(.+?)\s*[-:]\s*(.+?)(\d{2,4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*([\d,]+)\s*([\d,]+)\s*([\d,]+)\s*([\d,]+)$/;
-                            const match = line.match(regex);
-
-                            if (!match) {
-                                errors.push(`줄 ${lineIndex + 1}: 형식 오류`);
-                                errorCount++;
-                                processLine(lineIndex + 1);
-                                return;
-                            }
-
-                            [, gameName, serverName] = match;
-                            const [, , , year, month, day, diamondStr, priceStr, totalPriceStr, receivedAmountStr] = match;
-                            
-                            const fullYear = year.length === 2 ? `20${year}` : year;
-                            formattedDate = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                            
-                            // 다이아개수 처리
-                            diamondCount = parseInt(diamondStr.replace(/,/g, ''));
-                            pricePerTenThousand = parseInt(priceStr.replace(/,/g, ''));
-                            totalPrice = parseInt(totalPriceStr.replace(/,/g, ''));
-                            receivedAmount = parseInt(receivedAmountStr.replace(/,/g, ''));
-                        }
-
-                        // 데이터 유효성 검사
-                        if (isNaN(diamondCount) || isNaN(pricePerTenThousand) || isNaN(totalPrice) || isNaN(receivedAmount)) {
-                            errors.push(`줄 ${lineIndex + 1}: 숫자 형식 오류`);
-                            errorCount++;
-                            processLine(lineIndex + 1);
-                            return;
-                        }
-
-                        // 데이터베이스 저장
-                        const salesData = {
-                            userId: currentUser.uid,
-                            userEmail: currentUser.email.split('@')[0],
-                            gameName: gameName.trim(),
-                            serverName: serverName.trim(),
-                            saleDate: formattedDate,
-                            diamondCount: diamondCount,
-                            pricePerTenThousand: pricePerTenThousand,
-                            totalPrice: totalPrice,
-                            receivedAmount: receivedAmount,
-                            createdAt: new Date()
-                        };
-
-                        // Firebase에 저장
-                        await addDoc(collection(db, 'sales'), salesData);
-                        successCount++;
-                        
-                        // 다음 줄 처리
-                        processLine(lineIndex + 1);
-
-                    } catch (error) {
-                        errors.push(`줄 ${lineIndex + 1}: ${error.message}`);
-                        errorCount++;
-                        processLine(lineIndex + 1);
-                    }
-                };
-
-                // 첫 번째 줄부터 처리 시작
-                processLine(0);
-
-            } catch (error) {
-                showNotification('데이터 처리 중 오류가 발생했습니다: ' + error.message, 'error');
-            }
-        };
 
         // 알림 메시지 함수
         function showNotification(message, type = 'success') {
@@ -1649,63 +264,6 @@
                 }, 300);
             }, 3000);
         }
-
-        // 현재 월을 기본값으로 설정
-        const now = new Date();
-        const currentMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        monthSelect.value = currentMonthValue;
-        currentMonth = currentMonthValue;
-
-        // 모달 외부 클릭시 닫기
-        window.onclick = function(event) {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        };
-
-        // 초기 샘플 데이터 추가 함수 (테스트용)
-        window.addSampleData = async function() {
-            const sampleData = [
-                {
-                    gameName: "로드나인",
-                    serverName: "라디언트9",
-                    saleDate: "2024-11-28",
-                    diamondCount: 72000,
-                    pricePerTenThousand: 80000,
-                    totalPrice: 576000,
-                    receivedAmount: 547200
-                },
-                {
-                    gameName: "아레스",
-                    serverName: "닉스",
-                    saleDate: "2024-12-04",
-                    diamondCount: 82000,
-                    pricePerTenThousand: 50000,
-                    totalPrice: 410000,
-                    receivedAmount: 397700
-                }
-            ];
-
-            try {
-                for (const data of sampleData) {
-                    const salesData = {
-                        userId: currentUser.uid,
-                        userEmail: currentUser.email.split('@')[0],
-                        ...data,
-                        createdAt: new Date()
-                    };
-                    await addDoc(collection(db, 'sales'), salesData);
-                }
-                
-                loadSalesData();
-                showNotification('샘플 데이터가 추가되었습니다!', 'success');
-            } catch (error) {
-                showNotification('샘플 데이터 추가 실패: ' + error.message, 'error');
-            }
-        };
     </script>
 </body>
 </html>
