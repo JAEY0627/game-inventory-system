@@ -78,7 +78,7 @@ function updateGuestLoginButton() {
         upgradeBtn.onclick = () => {
             if (confirm('정식 로그인 페이지로 이동하시겠습니까? (현재 세션이 종료됩니다)')) {
                 signOut(auth).then(() => {
-                    window.location.href = 'login_page.html';
+                    window.location.href = 'index.html';
                 });
             }
         };
@@ -113,8 +113,8 @@ onAuthStateChanged(auth, (user) => {
         currentUser = null;
         
         // 로그인되지 않은 사용자는 로그인 페이지로 리다이렉트
-        if (!window.location.pathname.includes('login_page.html')) {
-            window.location.href = 'login_page.html';
+        if (!window.location.pathname.includes('index.html')) {
+            window.location.href = 'index.html';
         }
     }
 });
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (confirm(message)) {
                 sessionStorage.removeItem('currentUser');
                 signOut(auth).then(() => {
-                    window.location.href = 'login_page.html';
+                    window.location.href = 'index.html';
                 });
             }
         });

@@ -26,9 +26,9 @@
 
         <div class="content-section">
             <div class="section-title">
-                <span>현재 재고 내역</span>
+                <span>📦 현재 재고 내역</span>
                 <div class="title-buttons">
-                    <button class="btn btn-primary" onclick="openInventoryModal()">추가</button>
+                    <button class="btn btn-primary" onclick="openInventoryModal()">➕ 추가</button>
                 </div>
             </div>
 
@@ -48,7 +48,7 @@
                 </table>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;" id="inventorySummary">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 25px;" id="inventorySummary">
                 <!-- 게임/서버별 요약이 여기에 표시됩니다 -->
             </div>
         </div>
@@ -58,35 +58,35 @@
     <div id="inventoryModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title" id="inventoryModalTitle">재고 추가</h3>
+                <h3 class="modal-title" id="inventoryModalTitle">📦 재고 추가</h3>
                 <span class="close" onclick="closeInventoryModal()">&times;</span>
             </div>
             <form id="inventoryForm">
                 <div class="form-row">
                     <div class="form-group">
                         <label>게임명</label>
-                        <input type="text" id="invGameName" required>
+                        <input type="text" id="invGameName" placeholder="게임명을 입력하세요" required>
                     </div>
                     <div class="form-group">
                         <label>서버</label>
-                        <input type="text" id="invServerName" required>
+                        <input type="text" id="invServerName" placeholder="서버명을 입력하세요" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>컴퓨터명</label>
-                        <input type="text" id="computerName" required>
+                        <input type="text" id="computerName" placeholder="컴퓨터명을 입력하세요" required>
                     </div>
                     <div class="form-group">
                         <label>계정명</label>
-                        <input type="text" id="accountName" required>
+                        <input type="text" id="accountName" placeholder="계정명을 입력하세요" required>
                     </div>
                 </div>
                 <div class="form-group">
                     <label>다이아개수</label>
-                    <input type="number" id="invDiamondCount" required>
+                    <input type="number" id="invDiamondCount" placeholder="다이아 개수를 입력하세요" required>
                 </div>
-                <div style="text-align: right; margin-top: 20px;">
+                <div style="text-align: right; margin-top: 25px; display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="btn btn-secondary" onclick="closeInventoryModal()">취소</button>
                     <button type="submit" class="btn btn-primary" id="inventorySubmitBtn">추가</button>
                 </div>
@@ -111,13 +111,13 @@
             if (docId) {
                 editingDocId = docId;
                 editingType = 'inventory';
-                document.getElementById('inventoryModalTitle').textContent = '재고 수정';
+                document.getElementById('inventoryModalTitle').textContent = '📦 재고 수정';
                 document.getElementById('inventorySubmitBtn').textContent = '수정';
                 loadInventoryDataForEdit(docId);
             } else {
                 editingDocId = null;
                 editingType = null;
-                document.getElementById('inventoryModalTitle').textContent = '재고 추가';
+                document.getElementById('inventoryModalTitle').textContent = '📦 재고 추가';
                 document.getElementById('inventorySubmitBtn').textContent = '추가';
                 document.getElementById('inventoryForm').reset();
             }
@@ -237,16 +237,17 @@
                     Object.values(gameServerSummary).forEach(summary => {
                         const summaryCard = document.createElement('div');
                         summaryCard.style.cssText = `
-                            background: white;
-                            padding: 20px;
+                            background: linear-gradient(45deg, rgba(0, 255, 136, 0.2), rgba(0, 153, 255, 0.2));
+                            border: 2px solid #00ff88;
+                            padding: 25px;
                             border-radius: 15px;
-                            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
                         `;
                         summaryCard.innerHTML = `
-                            <h4 style="color: #667eea; margin-bottom: 15px; font-size: 18px;">${summary.gameName}</h4>
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
-                                <span>${summary.serverName}</span>
-                                <strong>${summary.totalDiamonds.toLocaleString()} 다이아</strong>
+                            <h4 style="color: #00ff88; margin-bottom: 15px; font-size: 20px; text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);">${summary.gameName}</h4>
+                            <div style="display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">
+                                <span style="color: #00ccff; font-weight: 600;">${summary.serverName}</span>
+                                <strong style="color: #00ff88; font-size: 18px; text-shadow: 0 0 5px rgba(0, 255, 136, 0.8);">${summary.totalDiamonds.toLocaleString()} 다이아</strong>
                             </div>
                         `;
                         summaryContainer.appendChild(summaryCard);
