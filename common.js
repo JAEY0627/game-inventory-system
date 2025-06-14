@@ -140,6 +140,9 @@ function loadPageData() {
         if (typeof loadInventoryData === 'function') {
             loadInventoryData();
         }
+        if (typeof loadDashboardData === 'function') {
+            loadDashboardData();
+        }
     }, 50);
 }
 

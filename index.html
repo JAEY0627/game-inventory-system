@@ -312,10 +312,10 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // 이미 로그인된 사용자는 메인 페이지로 리다이렉트
+        // 이미 로그인된 사용자는 메인 대시보드로 리다이렉트
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                window.location.href = 'sales.html';
+                window.location.href = 'main.html';
             }
         });
 
@@ -329,7 +329,7 @@
                 await signInWithEmailAndPassword(auth, email, password);
                 showNotification('로그인 성공!', 'success');
                 setTimeout(() => {
-                    window.location.href = 'sales.html';
+                    window.location.href = 'main.html';
                 }, 1000);
             } catch (error) {
                 showNotification('로그인 실패: ' + error.message, 'error');
@@ -342,7 +342,7 @@
                 await signInAnonymously(auth);
                 showNotification('게스트로 로그인되었습니다!', 'success');
                 setTimeout(() => {
-                    window.location.href = 'sales.html';
+                    window.location.href = 'main.html';
                 }, 1000);
             } catch (error) {
                 showNotification('게스트 로그인 실패: ' + error.message, 'error');

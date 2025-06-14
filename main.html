@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게임 아이템 관리 - 메인 대시보드</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js" type="module"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(15px);
+            border: 2px solid #00ff88;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 136, 0.3),
+                inset 0 0 20px rgba(0, 255, 136, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 136, 0.1), transparent);
+            animation: cardShine 4s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes cardShine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .card-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 15px;
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ff88;
+            text-align: center;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-value {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            color: #00ff88;
+            text-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+            margin-bottom: 10px;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            text-align: center;
+            color: #00ccff;
+            opacity: 0.8;
+        }
+
+        .chart-container {
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(15px);
+            border: 2px solid #00ff88;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 136, 0.3),
+                inset 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+
+        .chart-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ff88;
+            text-align: center;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+        }
+
+        .recent-section {
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(15px);
+            border: 2px solid #00ff88;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 136, 0.3),
+                inset 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+
+        .recent-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .recent-item:hover {
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .recent-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .recent-item-title {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .recent-item-amount {
+            color: #00ccff;
+            font-weight: bold;
+        }
+
+        .recent-item-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .profit-card {
+            border-color: #ff0099 !important;
+        }
+
+        .profit-card .card-title,
+        .profit-card .card-value {
+            color: #ff0099 !important;
+            text-shadow: 0 0 15px rgba(255, 0, 153, 0.8) !important;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            border-top: 2px solid #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">게임 아이템 관리</div>
+            <div class="navigation">
+                <a href="main.html" class="nav-link active">🏠 메인 대시보드</a>
+                <a href="sales.html" class="nav-link">📊 게임 판매내역</a>
+                <a href="investment.html" class="nav-link">💰 투자금 내역</a>
+                <a href="inventory.html" class="nav-link">📦 현재 재고</a>
+            </div>
+            <div class="user-info">
+                <span id="userEmail"></span>
+                <button id="logoutBtn" class="btn btn-secondary">로그아웃</button>
+            </div>
+        </div>
+
+        <div class="content-section cyber-glow">
+            <div class="section-title">
+                <span>🎮 메인 대시보드</span>
+                <div class="title-buttons">
+                    <button class="btn btn-primary" onclick="refreshDashboard()">🔄 새로고침</button>
+                </div>
+            </div>
+
+            <!-- 주요 지표 카드들 -->
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="card-icon">💰</div>
+                    <div class="card-title">총 판매금액</div>
+                    <div class="card-value" id="totalSalesValue">
+                        <span class="loading-spinner"></span>
+                    </div>
+                    <div class="card-subtitle">누적 판매 수익</div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-icon">💳</div>
+                    <div class="card-title">총 수령금액</div>
+                    <div class="card-value" id="totalReceivedValue">
+                        <span class="loading-spinner"></span>
+                    </div>
+                    <div class="card-subtitle">실제 받은 금액</div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-icon">💸</div>
+                    <div class="card-title">총 투자금액</div>
+                    <div class="card-value" id="totalInvestmentValue">
+                        <span class="loading-spinner"></span>
+                    </div>
+                    <div class="card-subtitle">누적 투자 비용</div>
+                </div>
+
+                <div class="dashboard-card profit-card">
+                    <div class="card-icon">📈</div>
+                    <div class="card-title">순이익</div>
+                    <div class="card-value" id="totalProfitValue">
+                        <span class="loading-spinner"></span>
+                    </div>
+                    <div class="card-subtitle">수령금액 - 투자금액</div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">총 거래 건수</div>
+                    <div class="card-value" id="totalTransactionsValue">
+                        <span class="loading-spinner"></span>
+                    </div>
+                    <div class="card-subtitle">총 판매 횟수</div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-icon">💎</div>
+                    <div class="card-title">현재 재고</div>
+                    <div class="card-value" id="totalInventoryValue">
+                        <span class="loading-spinner"></span>
+                    </div>
+                    <div class="card-subtitle">보유 다이아 총량</div>
+                </div>
+            </div>
+
+            <!-- 차트 섹션 -->
+            <div class="chart-grid">
+                <div class="chart-container">
+                    <div class="chart-title">📈 월별 판매 추이</div>
+                    <canvas id="monthlySalesChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">💰 월별 수익 비교</div>
+                    <canvas id="monthlyProfitChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">🎮 게임별 판매 현황</div>
+                <canvas id="gameStatsChart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- 최근 활동 섹션 -->
+            <div class="recent-section">
+                <div class="section-title">
+                    <span>🕒 최근 활동</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
+                    <div>
+                        <h4 style="color: #00ff88; margin-bottom: 15px;">최근 판매 (상위 5건)</h4>
+                        <div id="recentSales"></div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #00ff88; margin-bottom: 15px;">최근 투자 (상위 5건)</h4>
+                        <div id="recentInvestments"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db, showNotification } from './common.js';
+        import { collection, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        let salesChart, profitChart, gameChart;
+
+        // 전역 함수로 등록
+        window.refreshDashboard = refreshDashboard;
+
+        // 대시보드 데이터 로드
+        async function loadDashboardData() {
+            try {
+                // 모든 데이터 동시 로드
+                const [salesData, investmentData, inventoryData] = await Promise.all([
+                    getDocs(collection(db, 'sales')),
+                    getDocs(collection(db, 'investments')),
+                    getDocs(collection(db, 'inventory'))
+                ]);
+
+                // 판매 데이터 처리
+                const sales = [];
+                let totalSales = 0;
+                let totalReceived = 0;
+                let totalTransactions = 0;
+
+                salesData.forEach(doc => {
+                    const data = doc.data();
+                    sales.push(data);
+                    totalSales += data.totalPrice || 0;
+                    totalReceived += data.receivedAmount || 0;
+                    totalTransactions++;
+                });
+
+                // 투자 데이터 처리
+                const investments = [];
+                let totalInvestment = 0;
+
+                investmentData.forEach(doc => {
+                    const data = doc.data();
+                    investments.push(data);
+                    totalInvestment += data.amount || 0;
+                });
+
+                // 재고 데이터 처리
+                let totalInventory = 0;
+                inventoryData.forEach(doc => {
+                    const data = doc.data();
+                    totalInventory += data.diamondCount || 0;
+                });
+
+                // 순이익 계산
+                const totalProfit = totalReceived - totalInvestment;
+
+                // UI 업데이트
+                updateDashboardCards({
+                    totalSales,
+                    totalReceived,
+                    totalInvestment,
+                    totalProfit,
+                    totalTransactions,
+                    totalInventory
+                });
+
+                // 차트 업데이트
+                updateCharts(sales, investments);
+
+                // 최근 활동 업데이트
+                updateRecentActivities(sales, investments);
+
+            } catch (error) {
+                console.error('대시보드 데이터 로드 실패:', error);
+                showNotification('데이터 로드 실패: ' + error.message, 'error');
+            }
+        }
+
+        // 대시보드 카드 업데이트
+        function updateDashboardCards(data) {
+            document.getElementById('totalSalesValue').textContent = data.totalSales.toLocaleString() + '원';
+            document.getElementById('totalReceivedValue').textContent = data.totalReceived.toLocaleString() + '원';
+            document.getElementById('totalInvestmentValue').textContent = data.totalInvestment.toLocaleString() + '원';
+            document.getElementById('totalProfitValue').textContent = data.totalProfit.toLocaleString() + '원';
+            document.getElementById('totalTransactionsValue').textContent = data.totalTransactions.toLocaleString() + '건';
+            document.getElementById('totalInventoryValue').textContent = data.totalInventory.toLocaleString() + '개';
+
+            // 순이익이 음수면 빨간색으로 표시
+            const profitElement = document.getElementById('totalProfitValue');
+            if (data.totalProfit < 0) {
+                profitElement.style.color = '#ff3333';
+                profitElement.style.textShadow = '0 0 15px rgba(255, 51, 51, 0.8)';
+            }
+        }
+
+        // 차트 업데이트
+        function updateCharts(salesData, investmentData) {
+            // 월별 데이터 집계
+            const monthlyData = {};
+            const currentYear = new Date().getFullYear();
+
+            // 12개월 초기화
+            for (let i = 1; i <= 12; i++) {
+                const monthKey = `${currentYear}-${String(i).padStart(2, '0')}`;
+                monthlyData[monthKey] = {
+                    sales: 0,
+                    received: 0,
+                    investment: 0,
+                    transactions: 0
+                };
+            }
+
+            // 판매 데이터 집계
+            salesData.forEach(item => {
+                if (item.saleDate) {
+                    const date = new Date(item.saleDate);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    
+                    if (monthlyData[monthKey]) {
+                        monthlyData[monthKey].sales += item.totalPrice || 0;
+                        monthlyData[monthKey].received += item.receivedAmount || 0;
+                        monthlyData[monthKey].transactions++;
+                    }
+                }
+            });
+
+            // 투자 데이터 집계
+            investmentData.forEach(item => {
+                if (item.month && monthlyData[item.month]) {
+                    monthlyData[item.month].investment += item.amount || 0;
+                }
+            });
+
+            // 게임별 데이터 집계
+            const gameData = {};
+            salesData.forEach(item => {
+                const gameName = item.gameName || '기타';
+                if (!gameData[gameName]) {
+                    gameData[gameName] = {
+                        sales: 0,
+                        transactions: 0
+                    };
+                }
+                gameData[gameName].sales += item.totalPrice || 0;
+                gameData[gameName].transactions++;
+            });
+
+            // 차트 생성/업데이트
+            createMonthlySalesChart(monthlyData);
+            createMonthlyProfitChart(monthlyData);
+            createGameStatsChart(gameData);
+        }
+
+        // 월별 판매 차트
+        function createMonthlySalesChart(monthlyData) {
+            const ctx = document.getElementById('monthlySalesChart').getContext('2d');
+            
+            if (salesChart) {
+                salesChart.destroy();
+            }
+
+            const months = Object.keys(monthlyData).map(key => {
+                const [year, month] = key.split('-');
+                return `${month}월`;
+            });
+
+            const salesValues = Object.values(monthlyData).map(data => data.sales);
+            const transactionCounts = Object.values(monthlyData).map(data => data.transactions);
+
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: '판매금액',
+                        data: salesValues,
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: '거래건수',
+                        data: transactionCounts,
+                        borderColor: '#ff0099',
+                        backgroundColor: 'rgba(255, 0, 153, 0.1)',
+                        borderWidth: 2,
+                        type: 'bar',
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: { 
+                                color: '#00ff88',
+                                callback: function(value) {
+                                    return value.toLocaleString() + '원';
+                                }
+                            },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { 
+                                color: '#ff0099',
+                                callback: function(value) {
+                                    return value + '건';
+                                }
+                            },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 월별 수익 비교 차트
+        function createMonthlyProfitChart(monthlyData) {
+            const ctx = document.getElementById('monthlyProfitChart').getContext('2d');
+            
+            if (profitChart) {
+                profitChart.destroy();
+            }
+
+            const months = Object.keys(monthlyData).map(key => {
+                const [year, month] = key.split('-');
+                return `${month}월`;
+            });
+
+            const receivedValues = Object.values(monthlyData).map(data => data.received);
+            const investmentValues = Object.values(monthlyData).map(data => data.investment);
+
+            profitChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: '수령금액',
+                        data: receivedValues,
+                        backgroundColor: 'rgba(0, 255, 136, 0.7)',
+                        borderColor: '#00ff88',
+                        borderWidth: 2
+                    }, {
+                        label: '투자금액',
+                        data: investmentValues,
+                        backgroundColor: 'rgba(255, 0, 153, 0.7)',
+                        borderColor: '#ff0099',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00ff88'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#00ccff' },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        },
+                        y: {
+                            ticks: { 
+                                color: '#00ff88',
+                                callback: function(value) {
+                                    return value.toLocaleString() + '원';
+                                }
+                            },
+                            grid: { color: 'rgba(0, 255, 136, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 게임별 통계 차트
+        function createGameStatsChart(gameData) {
+            const ctx = document.getElementById('gameStatsChart').getContext('2d');
+            
+            if (gameChart) {
+                gameChart.destroy();
+            }
+
+            const gameNames = Object.keys(gameData);
+            const gameSales = Object.values(gameData).map(data => data.sales);
+
+            // 랜덤 색상 생성
+            const colors = gameNames.map(() => {
+                const hue = Math.random() * 360;
+                return `hsl(${hue}, 70%, 60%)`;
+            });
+
+            gameChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: gameNames,
+                    datasets: [{
+                        data: gameSales,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color.replace('60%', '80%')),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#00ff88',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 최근 활동 업데이트
+        async function updateRecentActivities(salesData, investmentData) {
+            // 최근 판매 5건
+            const recentSales = salesData
+                .sort((a, b) => new Date(b.createdAt?.toDate() || b.createdAt || 0) - new Date(a.createdAt?.toDate() || a.createdAt || 0))
+                .slice(0, 5);
+
+            const recentSalesHtml = recentSales.map(item => `
+                <div class="recent-item">
+                    <div class="recent-item-header">
+                        <span class="recent-item-title">${item.gameName} - ${item.serverName}</span>
+                        <span class="recent-item-amount">${item.totalPrice?.toLocaleString() || 0}원</span>
+                    </div>
+                    <div class="recent-item-date">${item.saleDate || '날짜 미상'}</div>
+                </div>
+            `).join('');
+
+            // 최근 투자 5건
+            const recentInvestments = investmentData
+                .sort((a, b) => new Date(b.createdAt?.toDate() || b.createdAt || 0) - new Date(a.createdAt?.toDate() || a.createdAt || 0))
+                .slice(0, 5);
+
+            const recentInvestmentsHtml = recentInvestments.map(item => `
+                <div class="recent-item">
+                    <div class="recent-item-header">
+                        <span class="recent-item-title">${item.type || '투자'}</span>
+                        <span class="recent-item-amount">${item.amount?.toLocaleString() || 0}원</span>
+                    </div>
+                    <div class="recent-item-date">${item.memo || ''}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('recentSales').innerHTML = recentSalesHtml || '<div style="color: #666; text-align: center; padding: 20px;">판매 내역이 없습니다.</div>';
+            document.getElementById('recentInvestments').innerHTML = recentInvestmentsHtml || '<div style="color: #666; text-align: center; padding: 20px;">투자 내역이 없습니다.</div>';
+        }
+
+        // 새로고침 함수
+        function refreshDashboard() {
+            showNotification('대시보드를 새로고침하는 중...', 'info');
+            
+            // 로딩 스피너 표시
+            const valueElements = ['totalSalesValue', 'totalReceivedValue', 'totalInvestmentValue', 'totalProfitValue', 'totalTransactionsValue', 'totalInventoryValue'];
+            valueElements.forEach(id => {
+                document.getElementById(id).innerHTML = '<span class="loading-spinner"></span>';
+            });
+
+            loadDashboardData().then(() => {
+                showNotification('대시보드가 업데이트되었습니다!', 'success');
+            });
+        }
+
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            // 인증 확인 후 데이터 로드
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    setTimeout(loadDashboardData, 500);
+                }
+            });
+        });
+
+        // 전역 함수로 등록 (common.js에서 호출용)
+        window.loadDashboardData = loadDashboardData;
+    </script>
+</body>
+</html>
