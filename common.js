@@ -192,6 +192,19 @@ export function showNotification(message, type = 'success') {
     }, 3000);
 }
 
+export function getUserGameFilter(userEmail) {
+    // 특정 사용자에게만 게임 필터 적용
+    const restrictedUsers = {
+        'huhu45514@gmail.com': '리니지M' // 리니지M의 정확한 게임명으로 수정 필요
+    };
+    
+    return restrictedUsers[userEmail] || null;
+}
+
+export function shouldFilterByGame(userEmail) {
+    return getUserGameFilter(userEmail) !== null;
+}
+
 // 모달 외부 클릭시 닫기
 document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(event) {

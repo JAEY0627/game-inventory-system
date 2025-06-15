@@ -336,7 +336,8 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getUserGameFilter, shouldFilterByGame } from './common.js';
 
         // Firebase 초기화
         const firebaseConfig = {
@@ -368,7 +369,7 @@
 
         function checkEditPermission(actionName = '이 기능') {
             if (!hasEditPermission()) {
-                showNotification(`${actionName}은 정식 로그인 후 이용 가능합니다.`, 'error');
+                showNotification(`${actionName}은(는) 정식 로그인 후 이용 가능합니다.`, 'error');
                 return false;
             }
             return true;
@@ -812,6 +813,22 @@
             });
         }
 
+        // 게임명 입력 필드 제한 (sales.html, inventory.html의 모달에서)
+        function restrictGameNameInput() {
+            const userGameFilter = getUserGameFilter(auth.currentUser.email);
+            
+            if (userGameFilter) {
+                // 게임명 필드를 readonly로 만들고 기본값 설정
+                const gameNameInput = document.getElementById('gameName') || document.getElementById('invGameName');
+                if (gameNameInput) {
+                    gameNameInput.value = userGameFilter;
+                    gameNameInput.readOnly = true;
+                    gameNameInput.style.backgroundColor = 'rgba(0, 255, 136, 0.1)';
+                    gameNameInput.style.color = '#00ff88';
+                }
+            }
+        }
+
         // 모달 함수들
         window.openInventoryModal = function(docId = null) {
             if (!checkEditPermission('재고 관리')) return;
@@ -828,6 +845,11 @@
                 document.getElementById('inventoryModalTitle').textContent = '📦 재고 추가';
                 document.getElementById('inventorySubmitBtn').textContent = '추가';
                 document.getElementById('inventoryForm').reset();
+
+                // 게임명 제한 적용
+                setTimeout(() => {
+                    restrictGameNameInput();
+                }, 100);
             }
             document.getElementById('inventoryModal').style.display = 'block';
         };
@@ -890,8 +912,21 @@
 
         // 데이터 로드 및 정렬
         async function loadInventoryData() {
-            try {
-                const querySnapshot = await getDocs(collection(db, 'inventory'));
+        try {
+                let querySnapshot;
+                const userGameFilter = getUserGameFilter(auth.currentUser.email);
+                
+                if (userGameFilter) {
+                    // 특정 게임만 조회
+                    const q = query(
+                        collection(db, 'inventory'), 
+                        where('gameName', '==', userGameFilter)
+                    );
+                    querySnapshot = await getDocs(q);
+                } else {
+                    // 모든 게임 조회
+                    querySnapshot = await getDocs(collection(db, 'inventory'));
+                }
                 
                 const gameSummary = {};
                 allInventoryData = [];

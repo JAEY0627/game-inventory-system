@@ -355,8 +355,9 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, collection, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-
+        import { getFirestore, collection, getDocs, query, orderBy, limit, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getUserGameFilter, shouldFilterByGame } from './common.js';
+        
         // Firebase 초기화
         const firebaseConfig = {
             apiKey: "AIzaSyBOikXWOMg3uj-f_kdnXh394sVDHMtboaE",
@@ -443,13 +444,30 @@
         // 대시보드 데이터 로드
         async function loadDashboardData() {
             try {
+                const userGameFilter = getUserGameFilter(auth.currentUser.email);
+        
                 // 모든 데이터 동시 로드
+                let salesQuery, inventoryQuery;
+                
+                if (userGameFilter) {
+                    salesQuery = query(
+                        collection(db, 'sales'),
+                        where('gameName', '==', userGameFilter)
+                    );
+                    inventoryQuery = query(
+                        collection(db, 'inventory'),
+                        where('gameName', '==', userGameFilter)
+                    );
+                } else {
+                    salesQuery = collection(db, 'sales');
+                    inventoryQuery = collection(db, 'inventory');
+                }
+                
                 const [salesData, investmentData, inventoryData] = await Promise.all([
-                    getDocs(collection(db, 'sales')),
-                    getDocs(collection(db, 'investments')),
-                    getDocs(collection(db, 'inventory'))
+                    getDocs(salesQuery),
+                    getDocs(collection(db, 'investments')), // 투자는 게임별 필터링 안함
+                    getDocs(inventoryQuery)
                 ]);
-
                 // 판매 데이터 처리
                 const sales = [];
                 let totalSales = 0;
@@ -554,7 +572,7 @@
 
             // 투자 데이터 집계
             investmentData.forEach(item => {
-                if (item.investmentDate) {
+                if (item.investmentDate) {  // item.month 대신 item.investmentDate 사용
                     const date = new Date(item.investmentDate);
                     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     
@@ -847,11 +865,11 @@
             // 최근 투자 5건 (월별 기준으로 정렬)
             const recentInvestments = investmentData
                 .sort((a, b) => {
-                    // 월별 정렬 (최신 월 순)
-                    if (a.month !== b.month) {
-                        return (b.month || '').localeCompare(a.month || '');
+                    // 투자일 기준으로 정렬 (최신 순)
+                    if (a.investmentDate !== b.investmentDate) {
+                        return (b.investmentDate || '').localeCompare(a.investmentDate || '');
                     }
-                    // 같은 월이면 등록일 기준
+                    // 같은 날이면 등록일 기준
                     const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
                     const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
                     return dateB - dateA;
@@ -867,9 +885,13 @@
                     minute: '2-digit'
                 });
                 
-                const monthText = item.month ? item.month.split('-').map((part, index) => 
-                    index === 0 ? part + '년' : parseInt(part) + '월'
-                ).join(' ') : '월 미상';
+                // investmentDate를 사용하여 날짜 표시
+                const investmentDateText = item.investmentDate ? 
+                    new Date(item.investmentDate).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }) : '날짜 미상';
                 
                 return `
                     <div class="recent-item">
@@ -877,7 +899,7 @@
                             <span class="recent-item-title">${item.type || '투자'}</span>
                             <span class="recent-item-amount">${item.amount?.toLocaleString() || 0}원</span>
                         </div>
-                        <div class="recent-item-date">📅 ${monthText} | 📝 ${item.memo || ''} | ⏰ ${formattedDate}</div>
+                        <div class="recent-item-date">📅 ${investmentDateText} | 📝 ${item.memo || ''} | ⏰ ${formattedDate}</div>
                     </div>
                 `;
             }).join('');
@@ -901,15 +923,18 @@
             // 투자 데이터 추가
             investmentData.forEach(item => {
                 const createdDate = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt || 0);
-                const monthText = item.month ? item.month.split('-').map((part, index) => 
-                    index === 0 ? part + '년' : parseInt(part) + '월'
-                ).join(' ') : '월 미상';
+                const investmentDateText = item.investmentDate ? 
+                    new Date(item.investmentDate).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }) : '날짜 미상';
                 
                 allActivities.push({
                     type: 'investment',
                     title: `💰 ${item.type || '투자'}`,
                     amount: item.amount || 0,
-                    detail: `${monthText} | ${item.memo || '메모 없음'}`,
+                    detail: `${investmentDateText} | ${item.memo || '메모 없음'}`,
                     createdAt: createdDate,
                     isUpdated: false
                 });

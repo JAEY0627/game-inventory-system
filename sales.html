@@ -174,7 +174,8 @@
 
     <script type="module">
         import { auth, db, showNotification, checkEditPermission, hasEditPermission } from './common.js';
-        import { collection, addDoc, getDocs, deleteDoc, doc, query, updateDoc, getDoc, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { collection, addDoc, getDocs, deleteDoc, doc, query, updateDoc, getDoc, orderBy, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getUserGameFilter, shouldFilterByGame } from './common.js';
 
         let allSalesData = [];
         let editingDocId = null;
@@ -182,6 +183,22 @@
 
         // 전역 함수로 등록
         window.loadSalesData = loadSalesData;
+
+        // 게임명 입력 필드 제한 (sales.html, inventory.html의 모달에서)
+        function restrictGameNameInput() {
+            const userGameFilter = getUserGameFilter(auth.currentUser.email);
+            
+            if (userGameFilter) {
+                // 게임명 필드를 readonly로 만들고 기본값 설정
+                const gameNameInput = document.getElementById('gameName') || document.getElementById('invGameName');
+                if (gameNameInput) {
+                    gameNameInput.value = userGameFilter;
+                    gameNameInput.readOnly = true;
+                    gameNameInput.style.backgroundColor = 'rgba(0, 255, 136, 0.1)';
+                    gameNameInput.style.color = '#00ff88';
+                }
+            }
+        }
 
         // 모달 함수들 (권한 체크 포함)
         window.openSalesModal = function(docId = null) {
@@ -199,6 +216,11 @@
                 document.getElementById('salesModalTitle').textContent = '📊 판매내역 추가';
                 document.getElementById('salesSubmitBtn').textContent = '추가';
                 document.getElementById('salesForm').reset();
+        
+                // 게임명 제한 적용
+                setTimeout(() => {
+                    restrictGameNameInput();
+                }, 100);
             }
             document.getElementById('salesModal').style.display = 'block';
             
@@ -318,7 +340,21 @@
         // 데이터 로드
         async function loadSalesData() {
             try {
-                const q = query(collection(db, 'sales'), orderBy('saleDate', 'desc'));
+                let q;
+                const userGameFilter = getUserGameFilter(auth.currentUser.email);
+                
+                if (userGameFilter) {
+                    // 특정 게임만 조회
+                    q = query(
+                        collection(db, 'sales'), 
+                        where('gameName', '==', userGameFilter),
+                        orderBy('saleDate', 'desc')
+                    );
+                } else {
+                    // 모든 게임 조회
+                    q = query(collection(db, 'sales'), orderBy('saleDate', 'desc'));
+                }
+                
                 const querySnapshot = await getDocs(q);
                 
                 allSalesData = [];
@@ -334,6 +370,7 @@
                 showNotification('데이터 로드 실패: ' + error.message, 'error');
             }
         }
+
 
         function populateMonthFilter() {
             const monthFilter = document.getElementById('monthFilter');
