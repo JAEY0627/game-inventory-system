@@ -529,18 +529,6 @@
         function updateCharts(salesData, investmentData) {
             // 월별 데이터 집계
             const monthlyData = {};
-            const currentYear = new Date().getFullYear();
-
-            // 12개월 초기화
-            for (let i = 1; i <= 12; i++) {
-                const monthKey = `${currentYear}-${String(i).padStart(2, '0')}`;
-                monthlyData[monthKey] = {
-                    sales: 0,
-                    received: 0,
-                    investment: 0,
-                    transactions: 0
-                };
-            }
 
             // 판매 데이터 집계
             salesData.forEach(item => {
@@ -548,18 +536,39 @@
                     const date = new Date(item.saleDate);
                     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     
-                    if (monthlyData[monthKey]) {
-                        monthlyData[monthKey].sales += item.totalPrice || 0;
-                        monthlyData[monthKey].received += item.receivedAmount || 0;
-                        monthlyData[monthKey].transactions++;
+                    // 월 데이터가 없으면 생성
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = {
+                            sales: 0,
+                            received: 0,
+                            investment: 0,
+                            transactions: 0
+                        };
                     }
+                    
+                    monthlyData[monthKey].sales += item.totalPrice || 0;
+                    monthlyData[monthKey].received += item.receivedAmount || 0;
+                    monthlyData[monthKey].transactions++;
                 }
             });
 
             // 투자 데이터 집계
             investmentData.forEach(item => {
-                if (item.month && monthlyData[item.month]) {
-                    monthlyData[item.month].investment += item.amount || 0;
+                if (item.investmentDate) {
+                    const date = new Date(item.investmentDate);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    
+                    // 월 데이터가 없으면 생성
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = {
+                            sales: 0,
+                            received: 0,
+                            investment: 0,
+                            transactions: 0
+                        };
+                    }
+                    
+                    monthlyData[monthKey].investment += item.amount || 0;
                 }
             });
 
@@ -577,27 +586,36 @@
                 gameData[gameName].transactions++;
             });
 
+            // 차트 생성 전에 월별 데이터를 정렬된 순서로 재구성
+            const sortedMonthKeys = Object.keys(monthlyData).sort();
+            const sortedMonthlyData = {};
+
+            sortedMonthKeys.forEach(key => {
+                sortedMonthlyData[key] = monthlyData[key];
+            });
+
             // 차트 생성/업데이트
-            createMonthlySalesChart(monthlyData);
-            createMonthlyProfitChart(monthlyData);
+            createMonthlySalesChart(sortedMonthlyData);
+            createMonthlyProfitChart(sortedMonthlyData);
             createGameStatsChart(gameData);
         }
 
         // 월별 판매 차트
-        function createMonthlySalesChart(monthlyData) {
+        function createMonthlySalesChart(sortedMonthlyData) {
             const ctx = document.getElementById('monthlySalesChart').getContext('2d');
             
             if (salesChart) {
                 salesChart.destroy();
             }
 
-            const months = Object.keys(monthlyData).map(key => {
+            const months = Object.keys(sortedMonthlyData).map(key => {
                 const [year, month] = key.split('-');
                 return `${month}월`;
             });
 
-            const salesValues = Object.values(monthlyData).map(data => data.sales);
-            const transactionCounts = Object.values(monthlyData).map(data => data.transactions);
+            // 수정 (만원 단위로 변환)
+            const salesValues = Object.values(sortedMonthlyData).map(data => Math.round(data.sales / 10000));
+            const transactionCounts = Object.values(sortedMonthlyData).map(data => data.transactions);
 
             salesChart = new Chart(ctx, {
                 type: 'line',
@@ -644,7 +662,7 @@
                             ticks: { 
                                 color: '#00ff88',
                                 callback: function(value) {
-                                    return value.toLocaleString() + '원';
+                                    return value.toLocaleString() + '만원';
                                 }
                             },
                             grid: { color: 'rgba(0, 255, 136, 0.1)' }
@@ -667,20 +685,20 @@
         }
 
         // 월별 수익 비교 차트
-        function createMonthlyProfitChart(monthlyData) {
+        function createMonthlyProfitChart(sortedMonthlyData) {
             const ctx = document.getElementById('monthlyProfitChart').getContext('2d');
             
             if (profitChart) {
                 profitChart.destroy();
             }
 
-            const months = Object.keys(monthlyData).map(key => {
+            const months = Object.keys(sortedMonthlyData).map(key => {
                 const [year, month] = key.split('-');
                 return `${month}월`;
             });
 
-            const receivedValues = Object.values(monthlyData).map(data => data.received);
-            const investmentValues = Object.values(monthlyData).map(data => data.investment);
+            const receivedValues = Object.values(sortedMonthlyData).map(data => Math.round(data.received / 10000));
+            const investmentValues = Object.values(sortedMonthlyData).map(data => Math.round(data.investment / 10000));
 
             profitChart = new Chart(ctx, {
                 type: 'bar',
@@ -719,7 +737,7 @@
                             ticks: { 
                                 color: '#00ff88',
                                 callback: function(value) {
-                                    return value.toLocaleString() + '원';
+                                    return value.toLocaleString() + '만원';
                                 }
                             },
                             grid: { color: 'rgba(0, 255, 136, 0.1)' }

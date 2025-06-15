@@ -230,9 +230,16 @@
                 </div>
             </div>
 
-            <!-- 빠른 수정 안내 -->
-            <div class="quick-edit-info">
-                💡 <strong>빠른 수정:</strong> 다이아 개수를 클릭하면 바로 수정할 수 있습니다! (Enter로 저장, Esc로 취소)
+            <!-- 통계 대시보드 -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div style="background: linear-gradient(45deg, rgba(0, 255, 136, 0.2), rgba(0, 153, 255, 0.2)); border: 2px solid #00ff88; padding: 25px; border-radius: 15px; text-align: center; position: relative; overflow: hidden;">
+                    <h4 style="margin-bottom: 15px; color: #00ff88;">👥 총 계정수</h4>
+                    <div class="summary-value" id="totalAccounts" style="font-size: 24px; color: #00ff88;">0개</div>
+                </div>
+                <div style="background: linear-gradient(45deg, rgba(46, 213, 115, 0.2), rgba(123, 237, 159, 0.2)); border: 2px solid #2ed573; padding: 25px; border-radius: 15px; text-align: center; position: relative; overflow: hidden;">
+                    <h4 style="margin-bottom: 15px; color: #2ed573;">💎 총 다이아개수</h4>
+                    <div class="summary-value" id="totalDiamonds" style="font-size: 24px; color: #2ed573;">0개</div>
+                </div>
             </div>
 
             <!-- 검색 및 필터 섹션 -->
@@ -261,6 +268,11 @@
                         <input type="text" id="accountSearch" placeholder="계정명 검색..." onkeyup="filterInventoryData()">
                     </div>
                 </div>
+            </div>
+
+            <!-- 빠른 수정 안내 -->
+            <div class="quick-edit-info">
+                💡 <strong>빠른 수정:</strong> 다이아 개수를 클릭하면 바로 수정할 수 있습니다! (Enter로 저장, Esc로 취소)
             </div>
 
             <div class="table-container">
@@ -422,6 +434,18 @@
         // 전역 함수로 등록
         window.loadInventoryData = loadInventoryData;
 
+        // 통계 업데이트 함수 (현재 필터된 데이터 기준)
+        function updateInventoryStats(data) {
+            const totalAccounts = data.length;
+            const totalDiamonds = data.reduce((sum, item) => sum + (item.diamondCount || 0), 0);
+            
+            const totalAccountsElement = document.getElementById('totalAccounts');
+            const totalDiamondsElement = document.getElementById('totalDiamonds');
+            
+            if (totalAccountsElement) totalAccountsElement.textContent = totalAccounts.toLocaleString() + '개';
+            if (totalDiamondsElement) totalDiamondsElement.textContent = totalDiamonds.toLocaleString() + '개';
+        }
+
         // 검색/필터 함수
         window.filterInventoryData = function() {
             const gameFilter = document.getElementById('gameFilter').value;
@@ -450,6 +474,7 @@
             }
 
             displayInventoryTable(filteredData);
+            updateInventoryStats(filteredData);
         };
 
         // 필터 옵션 업데이트
@@ -628,8 +653,12 @@
                     input.parentNode.replaceChild(newElement, input);
                 }
                 
-                // 게임별 요약만 다시 로드 (테이블은 그대로 유지)
+                // 게임별 요약과 통계 업데이트
                 updateGameSummary();
+                
+                // 현재 필터된 데이터로 통계 업데이트
+                const filteredData = getCurrentFilteredData();
+                updateInventoryStats(filteredData);
                 
             } catch (error) {
                 showNotification('업데이트 실패: ' + error.message, 'error');
@@ -639,6 +668,36 @@
                     restoreFromEdit(input);
                 }
             }
+        }
+
+        // 현재 필터된 데이터 가져오기
+        function getCurrentFilteredData() {
+            const gameFilter = document.getElementById('gameFilter').value;
+            const serverFilter = document.getElementById('serverFilter').value;
+            const computerFilter = document.getElementById('computerFilter').value;
+            const accountSearch = document.getElementById('accountSearch').value.toLowerCase();
+
+            let filteredData = allInventoryData;
+
+            if (gameFilter) {
+                filteredData = filteredData.filter(item => item.gameName === gameFilter);
+            }
+
+            if (serverFilter) {
+                filteredData = filteredData.filter(item => item.serverName === serverFilter);
+            }
+
+            if (computerFilter) {
+                filteredData = filteredData.filter(item => item.computerName === computerFilter);
+            }
+
+            if (accountSearch) {
+                filteredData = filteredData.filter(item => 
+                    item.accountName.toLowerCase().includes(accountSearch)
+                );
+            }
+
+            return filteredData;
         }
 
         // 게임별 요약만 업데이트하는 함수
@@ -873,6 +932,7 @@
                 
                 updateFilterOptions();
                 displayInventoryTable(allInventoryData);
+                updateInventoryStats(allInventoryData);
                 
                 const summaryContainer = document.getElementById('inventorySummary');
                 if (summaryContainer) {
