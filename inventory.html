@@ -135,6 +135,56 @@
             gap: 15px;
         }
 
+        /* 인라인 수정 관련 스타일 */
+        .editable-diamond {
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .editable-diamond:hover {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+
+        .editable-diamond.editing {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .inline-input {
+            background: rgba(0, 255, 136, 0.2);
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 80px;
+            font-weight: bold;
+        }
+
+        .inline-input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+        }
+
+        .quick-edit-info {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: #00ff88;
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .server-list {
                 grid-template-columns: 1fr;
@@ -178,6 +228,11 @@
                 <div class="title-buttons">
                     <button class="btn btn-primary" onclick="openInventoryModal()">➕ 추가</button>
                 </div>
+            </div>
+
+            <!-- 빠른 수정 안내 -->
+            <div class="quick-edit-info">
+                💡 <strong>빠른 수정:</strong> 다이아 개수를 클릭하면 바로 수정할 수 있습니다! (Enter로 저장, Esc로 취소)
             </div>
 
             <!-- 검색 및 필터 섹션 -->
@@ -267,12 +322,102 @@
     </div>
 
     <script type="module">
-        import { auth, db, showNotification, checkEditPermission, hasEditPermission } from './common.js';
-        import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        // Firebase 초기화
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOikXWOMg3uj-f_kdnXh394sVDHMtboaE",
+            authDomain: "game-inventory-system.firebaseapp.com",
+            projectId: "game-inventory-system",
+            storageBucket: "game-inventory-system.appspot.com",
+            messagingSenderId: "930027493877",
+            appId: "1:930027493877:web:87974d860dae032fbea8bc"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         let editingDocId = null;
         let editingType = null;
         let allInventoryData = [];
+        let currentUser = null;
+
+        // 유틸리티 함수들
+        function isAnonymousUser() {
+            return currentUser && currentUser.isAnonymous;
+        }
+
+        function hasEditPermission() {
+            return currentUser && !currentUser.isAnonymous;
+        }
+
+        function checkEditPermission(actionName = '이 기능') {
+            if (!hasEditPermission()) {
+                showNotification(`${actionName}은 정식 로그인 후 이용 가능합니다.`, 'error');
+                return false;
+            }
+            return true;
+        }
+
+        function showNotification(message, type = 'success') {
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 인증 상태 확인
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                const userEmailElement = document.getElementById('userEmail');
+                if (userEmailElement) {
+                    if (user.isAnonymous) {
+                        userEmailElement.innerHTML = '🔍 게스트 사용자 <small style="color: #999;">(읽기 전용)</small>';
+                    } else {
+                        userEmailElement.textContent = user.email;
+                    }
+                }
+                loadInventoryData();
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // 로그아웃 처리
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            const message = isAnonymousUser() ? 
+                '게스트 세션을 종료하시겠습니까?' : 
+                '로그아웃 하시겠습니까?';
+                
+            if (confirm(message)) {
+                signOut(auth).then(() => {
+                    window.location.href = 'index.html';
+                });
+            }
+        });
 
         // 전역 함수로 등록
         window.loadInventoryData = loadInventoryData;
@@ -286,22 +431,18 @@
 
             let filteredData = allInventoryData;
 
-            // 게임명 필터
             if (gameFilter) {
                 filteredData = filteredData.filter(item => item.gameName === gameFilter);
             }
 
-            // 서버 필터
             if (serverFilter) {
                 filteredData = filteredData.filter(item => item.serverName === serverFilter);
             }
 
-            // 컴퓨터명 필터
             if (computerFilter) {
                 filteredData = filteredData.filter(item => item.computerName === computerFilter);
             }
 
-            // 계정명 검색
             if (accountSearch) {
                 filteredData = filteredData.filter(item => 
                     item.accountName.toLowerCase().includes(accountSearch)
@@ -323,7 +464,6 @@
                 computerSet.add(item.computerName);
             });
 
-            // 게임명 필터 업데이트
             const gameFilter = document.getElementById('gameFilter');
             gameFilter.innerHTML = '<option value="">전체</option>';
             Array.from(gameSet).sort().forEach(game => {
@@ -333,7 +473,6 @@
                 gameFilter.appendChild(option);
             });
 
-            // 서버 필터 업데이트
             const serverFilter = document.getElementById('serverFilter');
             serverFilter.innerHTML = '<option value="">전체</option>';
             Array.from(serverSet).sort().forEach(server => {
@@ -343,7 +482,6 @@
                 serverFilter.appendChild(option);
             });
 
-            // 컴퓨터명 필터 업데이트
             const computerFilter = document.getElementById('computerFilter');
             computerFilter.innerHTML = '<option value="">전체</option>';
             Array.from(computerSet).sort().forEach(computer => {
@@ -354,6 +492,220 @@
             });
         }
 
+        // 인라인 다이아 개수 수정 함수
+        function createInlineEditDiamond(value, docId) {
+            const span = document.createElement('span');
+            span.className = 'editable-diamond';
+            span.textContent = value.toLocaleString();
+            span.setAttribute('data-doc-id', docId);
+            span.setAttribute('data-original-value', value);
+            
+            if (hasEditPermission()) {
+                span.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    startInlineEdit(span);
+                });
+                span.title = '클릭하여 수정';
+                span.style.cursor = 'pointer';
+            } else {
+                span.style.cursor = 'default';
+            }
+            
+            return span;
+        }
+
+        function startInlineEdit(element) {
+            if (!hasEditPermission()) {
+                showNotification('수정 권한이 없습니다.', 'error');
+                return;
+            }
+            
+            // 이미 편집 중인 다른 요소가 있다면 복원
+            const existingInput = document.querySelector('.inline-input');
+            if (existingInput) {
+                restoreFromEdit(existingInput);
+            }
+            
+            const currentValue = element.getAttribute('data-original-value');
+            const docId = element.getAttribute('data-doc-id');
+            
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'inline-input';
+            input.value = currentValue;
+            input.min = '0';
+            input.step = '1';
+            
+            // 원본 요소를 input에 저장
+            input._originalElement = element;
+            
+            element.parentNode.replaceChild(input, element);
+            input.focus();
+            input.select();
+            
+            function saveEdit() {
+                const newValue = parseInt(input.value);
+                if (isNaN(newValue) || newValue < 0) {
+                    showNotification('올바른 숫자를 입력해주세요.', 'error');
+                    input.focus();
+                    return;
+                }
+                
+                // 값이 변경되지 않았다면 취소와 동일하게 처리
+                if (newValue == currentValue) {
+                    cancelEdit();
+                    return;
+                }
+                
+                updateDiamondCount(docId, newValue, input);
+            }
+            
+            function cancelEdit() {
+                restoreFromEdit(input);
+            }
+            
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEdit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
+            
+            input.addEventListener('blur', function() {
+                // 조금 지연시켜서 다른 이벤트가 처리될 시간을 줌
+                setTimeout(() => {
+                    if (document.activeElement !== input && input.parentNode) {
+                        saveEdit();
+                    }
+                }, 150);
+            });
+        }
+
+        function restoreFromEdit(input) {
+            if (input && input._originalElement && input.parentNode) {
+                // 원본 요소의 클릭 이벤트 다시 연결
+                const originalElement = input._originalElement;
+                if (hasEditPermission()) {
+                    originalElement.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        startInlineEdit(originalElement);
+                    });
+                }
+                input.parentNode.replaceChild(originalElement, input);
+            }
+        }
+
+        async function updateDiamondCount(docId, newValue, input) {
+            try {
+                // 로딩 표시
+                if (input) {
+                    input.disabled = true;
+                    input.style.opacity = '0.5';
+                }
+                
+                const docRef = doc(db, 'inventory', docId);
+                await updateDoc(docRef, {
+                    diamondCount: newValue,
+                    updatedAt: new Date()
+                });
+                
+                showNotification('다이아 개수가 업데이트되었습니다!', 'success');
+                
+                // 로컬 데이터 업데이트
+                const itemIndex = allInventoryData.findIndex(item => item.id === docId);
+                if (itemIndex !== -1) {
+                    allInventoryData[itemIndex].diamondCount = newValue;
+                }
+                
+                // 새로운 값으로 엘리먼트 생성
+                const newElement = createInlineEditDiamond(newValue, docId);
+                
+                // input을 새 엘리먼트로 교체
+                if (input && input.parentNode) {
+                    input.parentNode.replaceChild(newElement, input);
+                }
+                
+                // 게임별 요약만 다시 로드 (테이블은 그대로 유지)
+                updateGameSummary();
+                
+            } catch (error) {
+                showNotification('업데이트 실패: ' + error.message, 'error');
+                
+                // 실패 시 원래 값으로 복원
+                if (input && input._originalElement) {
+                    restoreFromEdit(input);
+                }
+            }
+        }
+
+        // 게임별 요약만 업데이트하는 함수
+        function updateGameSummary() {
+            const gameSummary = {};
+            
+            allInventoryData.forEach(data => {
+                const gameName = data.gameName;
+                if (!gameSummary[gameName]) {
+                    gameSummary[gameName] = {
+                        gameName: gameName,
+                        servers: {},
+                        totalDiamonds: 0
+                    };
+                }
+                
+                if (!gameSummary[gameName].servers[data.serverName]) {
+                    gameSummary[gameName].servers[data.serverName] = 0;
+                }
+                
+                gameSummary[gameName].servers[data.serverName] += data.diamondCount;
+                gameSummary[gameName].totalDiamonds += data.diamondCount;
+            });
+            
+            const summaryContainer = document.getElementById('inventorySummary');
+            if (summaryContainer) {
+                summaryContainer.innerHTML = '';
+                
+                const sortedGames = Object.values(gameSummary).sort((a, b) => {
+                    return Object.keys(b.servers).length - Object.keys(a.servers).length;
+                });
+                
+                sortedGames.forEach(game => {
+                    const gameCard = document.createElement('div');
+                    gameCard.className = 'game-card';
+                    
+                    const serverItems = Object.entries(game.servers).map(([serverName, diamonds]) => `
+                        <div class="server-item">
+                            <div class="server-name">${serverName}</div>
+                            <div class="diamond-count">${diamonds.toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                    
+                    gameCard.innerHTML = `
+                        <div class="game-title">🎮 ${game.gameName}</div>
+                        <div class="server-list">
+                            ${serverItems}
+                        </div>
+                        <div class="total-diamonds">
+                            <div class="label">💎 총 다이아</div>
+                            <div class="value">${game.totalDiamonds.toLocaleString()}</div>
+                        </div>
+                    `;
+                    
+                    summaryContainer.appendChild(gameCard);
+                });
+                
+                if (Object.keys(gameSummary).length === 0) {
+                    summaryContainer.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 30px;">
+                            📦 등록된 재고가 없습니다.
+                        </div>
+                    `;
+                }
+            }
+        }
+
         // 테이블 표시 함수
         function displayInventoryTable(data) {
             const tbody = document.querySelector('#inventoryTable tbody');
@@ -361,9 +713,7 @@
             
             tbody.innerHTML = '';
             
-            // 정렬된 데이터로 테이블 생성
             data.forEach((item) => {
-                // 권한에 따른 관리 버튼 표시
                 let actionButtons = '';
                 if (hasEditPermission()) {
                     actionButtons = `
@@ -375,21 +725,35 @@
                 }
                 
                 const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${item.gameName}</td>
-                    <td>${item.serverName}</td>
-                    <td>${item.computerName}</td>
-                    <td>${item.accountName}</td>
-                    <td>${item.diamondCount.toLocaleString()}</td>
-                    <td>
-                        <span style="font-size: 10px; color: #666;">${item.userEmail || '익명'}</span><br>
-                        ${actionButtons}
-                    </td>
+                
+                // 각 셀을 직접 생성
+                const gameCell = row.insertCell();
+                gameCell.textContent = item.gameName;
+                
+                const serverCell = row.insertCell();
+                serverCell.textContent = item.serverName;
+                
+                const computerCell = row.insertCell();
+                computerCell.textContent = item.computerName;
+                
+                const accountCell = row.insertCell();
+                accountCell.textContent = item.accountName;
+                
+                // 다이아 개수 셀 - 인라인 수정 가능
+                const diamondCell = row.insertCell();
+                const diamondElement = createInlineEditDiamond(item.diamondCount, item.id);
+                diamondCell.appendChild(diamondElement);
+                
+                // 관리 셀
+                const actionCell = row.insertCell();
+                actionCell.innerHTML = `
+                    <span style="font-size: 10px; color: #666;">${item.userEmail || '익명'}</span><br>
+                    ${actionButtons}
                 `;
             });
         }
 
-        // 모달 함수들 (권한 체크 포함)
+        // 모달 함수들
         window.openInventoryModal = function(docId = null) {
             if (!checkEditPermission('재고 관리')) return;
             
@@ -416,7 +780,6 @@
             editingType = null;
         };
 
-        // 수정용 데이터 로드
         async function loadInventoryDataForEdit(docId) {
             const docRef = doc(db, 'inventory', docId);
             const docSnap = await getDoc(docRef);
@@ -444,15 +807,18 @@
                 serverName: document.getElementById('invServerName').value,
                 computerName: document.getElementById('computerName').value,
                 accountName: document.getElementById('accountName').value,
-                diamondCount: parseInt(document.getElementById('invDiamondCount').value),
-                createdAt: new Date()
+                diamondCount: parseInt(document.getElementById('invDiamondCount').value)
             };
 
             try {
                 if (editingDocId && editingType === 'inventory') {
+                    // 수정 시에는 updatedAt만 추가하고 createdAt은 유지
+                    inventoryData.updatedAt = new Date();
                     await updateDoc(doc(db, 'inventory', editingDocId), inventoryData);
                     showNotification('재고가 수정되었습니다.', 'success');
                 } else {
+                    // 새로 추가할 때만 createdAt 설정
+                    inventoryData.createdAt = new Date();
                     await addDoc(collection(db, 'inventory'), inventoryData);
                     showNotification('재고가 추가되었습니다.', 'success');
                 }
@@ -475,7 +841,6 @@
                     const data = doc.data();
                     allInventoryData.push({ id: doc.id, ...data });
                     
-                    // 게임별 요약 데이터 생성 (게임명 기준으로 그룹화)
                     const gameName = data.gameName;
                     if (!gameSummary[gameName]) {
                         gameSummary[gameName] = {
@@ -493,7 +858,6 @@
                     gameSummary[gameName].totalDiamonds += data.diamondCount;
                 });
                 
-                // 상세 재고 내역 정렬: 게임명 > 서버명 > 컴퓨터명 > 계정명
                 allInventoryData.sort((a, b) => {
                     if (a.gameName !== b.gameName) {
                         return a.gameName.localeCompare(b.gameName);
@@ -507,17 +871,13 @@
                     return a.accountName.localeCompare(b.accountName);
                 });
                 
-                // 필터 옵션 업데이트
                 updateFilterOptions();
-                
-                // 정렬된 데이터로 테이블 표시
                 displayInventoryTable(allInventoryData);
-                // 게임별 요약 표시 (서버 개수 많은 순으로 정렬)
+                
                 const summaryContainer = document.getElementById('inventorySummary');
                 if (summaryContainer) {
                     summaryContainer.innerHTML = '';
                     
-                    // 서버 개수가 많은 순으로 정렬
                     const sortedGames = Object.values(gameSummary).sort((a, b) => {
                         return Object.keys(b.servers).length - Object.keys(a.servers).length;
                     });
@@ -526,7 +886,6 @@
                         const gameCard = document.createElement('div');
                         gameCard.className = 'game-card';
                         
-                        // 서버별 데이터 생성
                         const serverItems = Object.entries(game.servers).map(([serverName, diamonds]) => `
                             <div class="server-item">
                                 <div class="server-name">${serverName}</div>
@@ -548,7 +907,6 @@
                         summaryContainer.appendChild(gameCard);
                     });
                     
-                    // 데이터가 없을 때 메시지 표시
                     if (Object.keys(gameSummary).length === 0) {
                         summaryContainer.innerHTML = `
                             <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 30px;">
@@ -577,6 +935,16 @@
                 }
             }
         };
+
+        // 모달 외부 클릭시 닫기
+        document.addEventListener('click', function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
     </script>
 </body>
 </html>

@@ -207,6 +207,18 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* 업데이트 표시 스타일 */
+        .updated-indicator {
+            display: inline-block;
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 5px;
+            border: 1px solid #ffaa00;
+        }
     </style>
 </head>
 <body>
@@ -333,7 +345,7 @@
                 </div>
 
                 <div style="margin-top: 30px;">
-                    <h4 style="color: #ff0099; margin-bottom: 15px;">📋 전체 최근 활동 (등록 시간 기준 10건)</h4>
+                    <h4 style="color: #ff0099; margin-bottom: 15px;">📋 전체 최근 활동 (등록/수정 시간 기준 10건)</h4>
                     <div id="recentActivities"></div>
                 </div>
             </div>
@@ -341,13 +353,92 @@
     </div>
 
     <script type="module">
-        import { auth, db, showNotification } from './common.js';
-        import { collection, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, collection, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        // Firebase 초기화
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOikXWOMg3uj-f_kdnXh394sVDHMtboaE",
+            authDomain: "game-inventory-system.firebaseapp.com",
+            projectId: "game-inventory-system",
+            storageBucket: "game-inventory-system.appspot.com",
+            messagingSenderId: "930027493877",
+            appId: "1:930027493877:web:87974d860dae032fbea8bc"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         let salesChart, profitChart, gameChart;
+        let currentUser = null;
+
+        // 유틸리티 함수들
+        function isAnonymousUser() {
+            return currentUser && currentUser.isAnonymous;
+        }
+
+        function showNotification(message, type = 'success') {
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 인증 상태 확인
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                const userEmailElement = document.getElementById('userEmail');
+                if (userEmailElement) {
+                    if (user.isAnonymous) {
+                        userEmailElement.innerHTML = '🔍 게스트 사용자 <small style="color: #999;">(읽기 전용)</small>';
+                    } else {
+                        userEmailElement.textContent = user.email;
+                    }
+                }
+                setTimeout(loadDashboardData, 500);
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // 로그아웃 처리
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            const message = isAnonymousUser() ? 
+                '게스트 세션을 종료하시겠습니까?' : 
+                '로그아웃 하시겠습니까?';
+                
+            if (confirm(message)) {
+                signOut(auth).then(() => {
+                    window.location.href = 'index.html';
+                });
+            }
+        });
 
         // 전역 함수로 등록
         window.refreshDashboard = refreshDashboard;
+        window.loadDashboardData = loadDashboardData;
 
         // 대시보드 데이터 로드
         async function loadDashboardData() {
@@ -703,7 +794,7 @@
             });
         }
 
-        // 최근 활동 업데이트
+        // 최근 활동 업데이트 (updatedAt 우선 처리)
         async function updateRecentActivities(salesData, investmentData, inventoryData) {
             // 최근 판매 5건 (판매일 기준으로 정렬)
             const recentSales = salesData
@@ -773,7 +864,7 @@
                 `;
             }).join('');
 
-            // 전체 최근 활동 10건 (판매, 투자, 재고 모든 데이터 포함, 등록 시간 기준)
+            // 전체 최근 활동 10건 (판매, 투자, 재고 모든 데이터 포함, 최신 시간 기준)
             const allActivities = [];
             
             // 판매 데이터 추가
@@ -784,7 +875,8 @@
                     title: `🛒 ${item.gameName} - ${item.serverName}`,
                     amount: item.totalPrice || 0,
                     detail: `판매일: ${item.saleDate || '미상'} | 다이아: ${(item.diamondCount || 0).toLocaleString()}개`,
-                    createdAt: createdDate
+                    createdAt: createdDate,
+                    isUpdated: false
                 });
             });
             
@@ -800,23 +892,41 @@
                     title: `💰 ${item.type || '투자'}`,
                     amount: item.amount || 0,
                     detail: `${monthText} | ${item.memo || '메모 없음'}`,
-                    createdAt: createdDate
+                    createdAt: createdDate,
+                    isUpdated: false
                 });
             });
 
-            // 재고 데이터 추가
+            // 재고 데이터 추가 (updatedAt 우선, 없으면 createdAt 사용)
             inventoryData.forEach(item => {
+                // updatedAt과 createdAt 비교하여 실제 수정 여부 판단
+                let activityDate;
+                let isUpdated = false;
+                
                 const createdDate = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt || 0);
+                const updatedDate = item.updatedAt?.toDate ? item.updatedAt.toDate() : null;
+                
+                if (updatedDate && updatedDate > createdDate) {
+                    // updatedAt이 createdAt보다 나중이면 실제 수정된 것
+                    activityDate = updatedDate;
+                    isUpdated = true;
+                } else {
+                    // updatedAt이 없거나 createdAt과 같으면 최초 생성
+                    activityDate = createdDate;
+                    isUpdated = false;
+                }
+                
                 allActivities.push({
                     type: 'inventory',
                     title: `📦 ${item.gameName} - ${item.serverName}`,
                     amount: item.diamondCount || 0,
                     detail: `${item.computerName} | ${item.accountName}`,
-                    createdAt: createdDate
+                    createdAt: activityDate,
+                    isUpdated: isUpdated
                 });
             });
             
-            // 등록 시간 기준으로 정렬하고 10건만
+            // 최신 시간 기준으로 정렬하고 10건만
             const recentActivitiesSorted = allActivities
                 .sort((a, b) => b.createdAt - a.createdAt)
                 .slice(0, 10);
@@ -845,10 +955,13 @@
                     amountText = `${item.amount.toLocaleString()}개`;
                 }
                 
+                // 업데이트된 항목에 표시 추가
+                const updatedIndicator = item.isUpdated ? '<span class="updated-indicator">수정됨</span>' : '';
+                
                 return `
                     <div class="recent-item">
                         <div class="recent-item-header">
-                            <span class="recent-item-title">${item.title}</span>
+                            <span class="recent-item-title">${item.title}${updatedIndicator}</span>
                             <span class="recent-item-amount" style="color: ${amountColor};">${amountSign}${amountText}</span>
                         </div>
                         <div class="recent-item-date">${item.detail} | ⏰ ${formattedDate}</div>
@@ -875,19 +988,6 @@
                 showNotification('대시보드가 업데이트되었습니다!', 'success');
             });
         }
-
-        // 페이지 로드 시 실행
-        document.addEventListener('DOMContentLoaded', function() {
-            // 인증 확인 후 데이터 로드
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    setTimeout(loadDashboardData, 500);
-                }
-            });
-        });
-
-        // 전역 함수로 등록 (common.js에서 호출용)
-        window.loadDashboardData = loadDashboardData;
     </script>
 </body>
 </html>
