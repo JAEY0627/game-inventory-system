@@ -173,6 +173,14 @@
             margin-bottom: 30px;
         }
 
+        .game-chart-container {
+            position: relative;
+            height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         @media (max-width: 768px) {
             .chart-grid {
                 grid-template-columns: 1fr;
@@ -291,7 +299,9 @@
 
             <div class="chart-container">
                 <div class="chart-title">🎮 게임별 판매 현황</div>
-                <canvas id="gameStatsChart" width="400" height="200"></canvas>
+                <div class="game-chart-container">
+                    <canvas id="gameStatsChart" width="350" height="350"></canvas>
+                </div>
             </div>
 
             <!-- 최근 활동 섹션 -->
@@ -302,14 +312,19 @@
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
                     <div>
-                        <h4 style="color: #00ff88; margin-bottom: 15px;">최근 판매 (상위 5건)</h4>
+                        <h4 style="color: #00ff88; margin-bottom: 15px;">최근 판매 (판매일 기준 5건)</h4>
                         <div id="recentSales"></div>
                     </div>
                     
                     <div>
-                        <h4 style="color: #00ff88; margin-bottom: 15px;">최근 투자 (상위 5건)</h4>
+                        <h4 style="color: #00ff88; margin-bottom: 15px;">최근 투자 (월별 기준 5건)</h4>
                         <div id="recentInvestments"></div>
                     </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h4 style="color: #ff0099; margin-bottom: 15px;">📋 전체 최근 활동 (등록 시간 기준 10건)</h4>
+                    <div id="recentActivities"></div>
                 </div>
             </div>
         </div>
@@ -359,9 +374,11 @@
                 });
 
                 // 재고 데이터 처리
+                const inventory = [];
                 let totalInventory = 0;
                 inventoryData.forEach(doc => {
                     const data = doc.data();
+                    inventory.push(data);
                     totalInventory += data.diamondCount || 0;
                 });
 
@@ -381,8 +398,8 @@
                 // 차트 업데이트
                 updateCharts(sales, investments);
 
-                // 최근 활동 업데이트
-                updateRecentActivities(sales, investments);
+                // 최근 활동 업데이트 (재고 데이터도 전달)
+                updateRecentActivities(sales, investments, inventory);
 
             } catch (error) {
                 console.error('대시보드 데이터 로드 실패:', error);
@@ -619,6 +636,13 @@
 
             const gameNames = Object.keys(gameData);
             const gameSales = Object.values(gameData).map(data => data.sales);
+            const totalSales = gameSales.reduce((sum, value) => sum + value, 0);
+
+            // 퍼센티지 계산
+            const gameLabelsWithPercentage = gameNames.map((name, index) => {
+                const percentage = totalSales > 0 ? Math.round((gameSales[index] / totalSales) * 100) : 0;
+                return `${name} (${percentage}%)`;
+            });
 
             // 랜덤 색상 생성
             const colors = gameNames.map(() => {
@@ -629,7 +653,7 @@
             gameChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: gameNames,
+                    labels: gameLabelsWithPercentage,
                     datasets: [{
                         data: gameSales,
                         backgroundColor: colors,
@@ -639,12 +663,27 @@
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom',
+                            position: 'right',
                             labels: {
                                 color: '#00ff88',
-                                padding: 20
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    return `${label}: ${value.toLocaleString()}원`;
+                                }
                             }
                         }
                     }
@@ -653,39 +692,161 @@
         }
 
         // 최근 활동 업데이트
-        async function updateRecentActivities(salesData, investmentData) {
-            // 최근 판매 5건
+        async function updateRecentActivities(salesData, investmentData, inventoryData) {
+            // 최근 판매 5건 (판매일 기준으로 정렬)
             const recentSales = salesData
-                .sort((a, b) => new Date(b.createdAt?.toDate() || b.createdAt || 0) - new Date(a.createdAt?.toDate() || a.createdAt || 0))
+                .filter(item => item.saleDate) // 판매일이 있는 것만
+                .sort((a, b) => {
+                    const dateA = new Date(a.saleDate);
+                    const dateB = new Date(b.saleDate);
+                    return dateB - dateA; // 최신 판매일 순
+                })
                 .slice(0, 5);
 
-            const recentSalesHtml = recentSales.map(item => `
-                <div class="recent-item">
-                    <div class="recent-item-header">
-                        <span class="recent-item-title">${item.gameName} - ${item.serverName}</span>
-                        <span class="recent-item-amount">${item.totalPrice?.toLocaleString() || 0}원</span>
+            const recentSalesHtml = recentSales.map(item => {
+                const createdDate = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt || 0);
+                const formattedDate = createdDate.toLocaleDateString('ko-KR', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <div class="recent-item">
+                        <div class="recent-item-header">
+                            <span class="recent-item-title">${item.gameName} - ${item.serverName}</span>
+                            <span class="recent-item-amount">${item.totalPrice?.toLocaleString() || 0}원</span>
+                        </div>
+                        <div class="recent-item-date">📅 ${item.saleDate} | ⏰ ${formattedDate}</div>
                     </div>
-                    <div class="recent-item-date">${item.saleDate || '날짜 미상'}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
-            // 최근 투자 5건
+            // 최근 투자 5건 (월별 기준으로 정렬)
             const recentInvestments = investmentData
-                .sort((a, b) => new Date(b.createdAt?.toDate() || b.createdAt || 0) - new Date(a.createdAt?.toDate() || a.createdAt || 0))
+                .sort((a, b) => {
+                    // 월별 정렬 (최신 월 순)
+                    if (a.month !== b.month) {
+                        return (b.month || '').localeCompare(a.month || '');
+                    }
+                    // 같은 월이면 등록일 기준
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                    return dateB - dateA;
+                })
                 .slice(0, 5);
 
-            const recentInvestmentsHtml = recentInvestments.map(item => `
-                <div class="recent-item">
-                    <div class="recent-item-header">
-                        <span class="recent-item-title">${item.type || '투자'}</span>
-                        <span class="recent-item-amount">${item.amount?.toLocaleString() || 0}원</span>
+            const recentInvestmentsHtml = recentInvestments.map(item => {
+                const createdDate = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt || 0);
+                const formattedDate = createdDate.toLocaleDateString('ko-KR', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const monthText = item.month ? item.month.split('-').map((part, index) => 
+                    index === 0 ? part + '년' : parseInt(part) + '월'
+                ).join(' ') : '월 미상';
+                
+                return `
+                    <div class="recent-item">
+                        <div class="recent-item-header">
+                            <span class="recent-item-title">${item.type || '투자'}</span>
+                            <span class="recent-item-amount">${item.amount?.toLocaleString() || 0}원</span>
+                        </div>
+                        <div class="recent-item-date">📅 ${monthText} | 📝 ${item.memo || ''} | ⏰ ${formattedDate}</div>
                     </div>
-                    <div class="recent-item-date">${item.memo || ''}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+
+            // 전체 최근 활동 10건 (판매, 투자, 재고 모든 데이터 포함, 등록 시간 기준)
+            const allActivities = [];
+            
+            // 판매 데이터 추가
+            salesData.forEach(item => {
+                const createdDate = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt || 0);
+                allActivities.push({
+                    type: 'sale',
+                    title: `🛒 ${item.gameName} - ${item.serverName}`,
+                    amount: item.totalPrice || 0,
+                    detail: `판매일: ${item.saleDate || '미상'} | 다이아: ${(item.diamondCount || 0).toLocaleString()}개`,
+                    createdAt: createdDate
+                });
+            });
+            
+            // 투자 데이터 추가
+            investmentData.forEach(item => {
+                const createdDate = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt || 0);
+                const monthText = item.month ? item.month.split('-').map((part, index) => 
+                    index === 0 ? part + '년' : parseInt(part) + '월'
+                ).join(' ') : '월 미상';
+                
+                allActivities.push({
+                    type: 'investment',
+                    title: `💰 ${item.type || '투자'}`,
+                    amount: item.amount || 0,
+                    detail: `${monthText} | ${item.memo || '메모 없음'}`,
+                    createdAt: createdDate
+                });
+            });
+
+            // 재고 데이터 추가
+            inventoryData.forEach(item => {
+                const createdDate = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt || 0);
+                allActivities.push({
+                    type: 'inventory',
+                    title: `📦 ${item.gameName} - ${item.serverName}`,
+                    amount: item.diamondCount || 0,
+                    detail: `${item.computerName} | ${item.accountName}`,
+                    createdAt: createdDate
+                });
+            });
+            
+            // 등록 시간 기준으로 정렬하고 10건만
+            const recentActivitiesSorted = allActivities
+                .sort((a, b) => b.createdAt - a.createdAt)
+                .slice(0, 10);
+            
+            const recentActivitiesHtml = recentActivitiesSorted.map(item => {
+                const formattedDate = item.createdAt.toLocaleDateString('ko-KR', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                let amountColor, amountSign, amountText;
+                
+                if (item.type === 'sale') {
+                    amountColor = '#00ff88';
+                    amountSign = '+';
+                    amountText = `${item.amount.toLocaleString()}원`;
+                } else if (item.type === 'investment') {
+                    amountColor = '#ff0099';
+                    amountSign = '-';
+                    amountText = `${item.amount.toLocaleString()}원`;
+                } else { // inventory
+                    amountColor = '#00ccff';
+                    amountSign = '';
+                    amountText = `${item.amount.toLocaleString()}개`;
+                }
+                
+                return `
+                    <div class="recent-item">
+                        <div class="recent-item-header">
+                            <span class="recent-item-title">${item.title}</span>
+                            <span class="recent-item-amount" style="color: ${amountColor};">${amountSign}${amountText}</span>
+                        </div>
+                        <div class="recent-item-date">${item.detail} | ⏰ ${formattedDate}</div>
+                    </div>
+                `;
+            }).join('');
 
             document.getElementById('recentSales').innerHTML = recentSalesHtml || '<div style="color: #666; text-align: center; padding: 20px;">판매 내역이 없습니다.</div>';
             document.getElementById('recentInvestments').innerHTML = recentInvestmentsHtml || '<div style="color: #666; text-align: center; padding: 20px;">투자 내역이 없습니다.</div>';
+            document.getElementById('recentActivities').innerHTML = recentActivitiesHtml || '<div style="color: #666; text-align: center; padding: 20px;">활동 내역이 없습니다.</div>';
         }
 
         // 새로고침 함수

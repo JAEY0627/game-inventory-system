@@ -13,9 +13,9 @@
             background: rgba(10, 10, 10, 0.9);
             backdrop-filter: blur(15px);
             border: 2px solid #00ff88;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
             box-shadow: 
                 0 0 20px rgba(0, 255, 136, 0.3),
                 inset 0 0 20px rgba(0, 255, 136, 0.1);
@@ -24,11 +24,16 @@
         .game-card {
             background: linear-gradient(45deg, rgba(0, 255, 136, 0.2), rgba(0, 153, 255, 0.2));
             border: 2px solid #00ff88;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
             position: relative;
             overflow: hidden;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            min-height: 200px;
         }
 
         .game-card::before {
@@ -50,8 +55,8 @@
 
         .game-title {
             color: #00ff88;
-            margin-bottom: 20px;
-            font-size: 24px;
+            margin-bottom: 12px;
+            font-size: 18px;
             text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -62,37 +67,39 @@
 
         .server-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
             position: relative;
             z-index: 1;
+            margin-bottom: 12px;
+            flex: 1;
         }
 
         .server-item {
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid #333;
-            border-radius: 10px;
-            padding: 15px;
+            border-radius: 8px;
+            padding: 8px;
             text-align: center;
             transition: all 0.3s ease;
         }
 
         .server-item:hover {
             border-color: #00ff88;
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
-            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+            transform: translateY(-1px);
         }
 
         .server-name {
             color: #00ccff;
             font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 16px;
+            margin-bottom: 4px;
+            font-size: 13px;
         }
 
         .diamond-count {
             color: #00ff88;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
             text-shadow: 0 0 5px rgba(0, 255, 136, 0.8);
         }
@@ -100,31 +107,42 @@
         .total-diamonds {
             background: rgba(255, 0, 153, 0.1);
             border: 2px solid #ff0099;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
+            border-radius: 8px;
+            padding: 10px;
             text-align: center;
             position: relative;
             z-index: 1;
+            margin-top: auto;
         }
 
         .total-diamonds .label {
             color: #ff0099;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
+            font-size: 12px;
         }
 
         .total-diamonds .value {
             color: #ff0099;
-            font-size: 22px;
+            font-size: 18px;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(255, 0, 153, 0.8);
         }
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .server-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -159,6 +177,34 @@
                 <span>📦 상세 재고 내역</span>
                 <div class="title-buttons">
                     <button class="btn btn-primary" onclick="openInventoryModal()">➕ 추가</button>
+                </div>
+            </div>
+
+            <!-- 검색 및 필터 섹션 -->
+            <div style="background: rgba(0, 0, 0, 0.5); border: 1px solid #333; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🎮 게임명</label>
+                        <select id="gameFilter" onchange="filterInventoryData()">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🌐 서버</label>
+                        <select id="serverFilter" onchange="filterInventoryData()">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>💻 컴퓨터명</label>
+                        <select id="computerFilter" onchange="filterInventoryData()">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🔍 계정명 검색</label>
+                        <input type="text" id="accountSearch" placeholder="계정명 검색..." onkeyup="filterInventoryData()">
+                    </div>
                 </div>
             </div>
 
@@ -212,7 +258,7 @@
                     <label>다이아개수</label>
                     <input type="number" id="invDiamondCount" placeholder="다이아 개수를 입력하세요" required>
                 </div>
-                <div style="text-align: right; margin-top: 25px; display: flex; gap: 10px; justify-content: flex-end;">
+                <div style="text-align: right; margin-top: 20px; display: flex; gap: 8px; justify-content: flex-end;">
                     <button type="button" class="btn btn-secondary" onclick="closeInventoryModal()">취소</button>
                     <button type="submit" class="btn btn-primary" id="inventorySubmitBtn">추가</button>
                 </div>
@@ -226,9 +272,122 @@
 
         let editingDocId = null;
         let editingType = null;
+        let allInventoryData = [];
 
         // 전역 함수로 등록
         window.loadInventoryData = loadInventoryData;
+
+        // 검색/필터 함수
+        window.filterInventoryData = function() {
+            const gameFilter = document.getElementById('gameFilter').value;
+            const serverFilter = document.getElementById('serverFilter').value;
+            const computerFilter = document.getElementById('computerFilter').value;
+            const accountSearch = document.getElementById('accountSearch').value.toLowerCase();
+
+            let filteredData = allInventoryData;
+
+            // 게임명 필터
+            if (gameFilter) {
+                filteredData = filteredData.filter(item => item.gameName === gameFilter);
+            }
+
+            // 서버 필터
+            if (serverFilter) {
+                filteredData = filteredData.filter(item => item.serverName === serverFilter);
+            }
+
+            // 컴퓨터명 필터
+            if (computerFilter) {
+                filteredData = filteredData.filter(item => item.computerName === computerFilter);
+            }
+
+            // 계정명 검색
+            if (accountSearch) {
+                filteredData = filteredData.filter(item => 
+                    item.accountName.toLowerCase().includes(accountSearch)
+                );
+            }
+
+            displayInventoryTable(filteredData);
+        };
+
+        // 필터 옵션 업데이트
+        function updateFilterOptions() {
+            const gameSet = new Set();
+            const serverSet = new Set();
+            const computerSet = new Set();
+
+            allInventoryData.forEach(item => {
+                gameSet.add(item.gameName);
+                serverSet.add(item.serverName);
+                computerSet.add(item.computerName);
+            });
+
+            // 게임명 필터 업데이트
+            const gameFilter = document.getElementById('gameFilter');
+            gameFilter.innerHTML = '<option value="">전체</option>';
+            Array.from(gameSet).sort().forEach(game => {
+                const option = document.createElement('option');
+                option.value = game;
+                option.textContent = game;
+                gameFilter.appendChild(option);
+            });
+
+            // 서버 필터 업데이트
+            const serverFilter = document.getElementById('serverFilter');
+            serverFilter.innerHTML = '<option value="">전체</option>';
+            Array.from(serverSet).sort().forEach(server => {
+                const option = document.createElement('option');
+                option.value = server;
+                option.textContent = server;
+                serverFilter.appendChild(option);
+            });
+
+            // 컴퓨터명 필터 업데이트
+            const computerFilter = document.getElementById('computerFilter');
+            computerFilter.innerHTML = '<option value="">전체</option>';
+            Array.from(computerSet).sort().forEach(computer => {
+                const option = document.createElement('option');
+                option.value = computer;
+                option.textContent = computer;
+                computerFilter.appendChild(option);
+            });
+        }
+
+        // 테이블 표시 함수
+        function displayInventoryTable(data) {
+            const tbody = document.querySelector('#inventoryTable tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            // 정렬된 데이터로 테이블 생성
+            data.forEach((item) => {
+                // 권한에 따른 관리 버튼 표시
+                let actionButtons = '';
+                if (hasEditPermission()) {
+                    actionButtons = `
+                        <button class="btn btn-warning btn-small" onclick="openInventoryModal('${item.id}')">수정</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteInventory('${item.id}')">삭제</button>
+                    `;
+                } else {
+                    actionButtons = '<span style="color: #999; font-size: 10px;">읽기 전용</span>';
+                }
+                
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${item.gameName}</td>
+                    <td>${item.serverName}</td>
+                    <td>${item.computerName}</td>
+                    <td>${item.accountName}</td>
+                    <td>${item.diamondCount.toLocaleString()}</td>
+                    <td>
+                        <span style="font-size: 10px; color: #666;">${item.userEmail || '익명'}</span><br>
+                        ${actionButtons}
+                    </td>
+                `;
+            });
+        }
 
         // 모달 함수들 (권한 체크 포함)
         window.openInventoryModal = function(docId = null) {
@@ -304,44 +463,17 @@
             }
         });
 
-        // 데이터 로드
+        // 데이터 로드 및 정렬
         async function loadInventoryData() {
             try {
                 const querySnapshot = await getDocs(collection(db, 'inventory'));
                 
-                const tbody = document.querySelector('#inventoryTable tbody');
-                if (!tbody) return;
-                
-                tbody.innerHTML = '';
-                
                 const gameSummary = {};
+                allInventoryData = [];
                 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    
-                    // 권한에 따른 관리 버튼 표시
-                    let actionButtons = '';
-                    if (hasEditPermission()) {
-                        actionButtons = `
-                            <button class="btn btn-warning btn-small" onclick="openInventoryModal('${doc.id}')">수정</button>
-                            <button class="btn btn-danger btn-small" onclick="deleteInventory('${doc.id}')">삭제</button>
-                        `;
-                    } else {
-                        actionButtons = '<span style="color: #999; font-size: 12px;">읽기 전용</span>';
-                    }
-                    
-                    const row = tbody.insertRow();
-                    row.innerHTML = `
-                        <td>${data.gameName}</td>
-                        <td>${data.serverName}</td>
-                        <td>${data.computerName}</td>
-                        <td>${data.accountName}</td>
-                        <td>${data.diamondCount.toLocaleString()}</td>
-                        <td>
-                            <span style="font-size: 12px; color: #666;">${data.userEmail || '익명'}</span><br>
-                            ${actionButtons}
-                        </td>
-                    `;
+                    allInventoryData.push({ id: doc.id, ...data });
                     
                     // 게임별 요약 데이터 생성 (게임명 기준으로 그룹화)
                     const gameName = data.gameName;
@@ -361,12 +493,36 @@
                     gameSummary[gameName].totalDiamonds += data.diamondCount;
                 });
                 
-                // 게임별 요약 표시
+                // 상세 재고 내역 정렬: 게임명 > 서버명 > 컴퓨터명 > 계정명
+                allInventoryData.sort((a, b) => {
+                    if (a.gameName !== b.gameName) {
+                        return a.gameName.localeCompare(b.gameName);
+                    }
+                    if (a.serverName !== b.serverName) {
+                        return a.serverName.localeCompare(b.serverName);
+                    }
+                    if (a.computerName !== b.computerName) {
+                        return a.computerName.localeCompare(b.computerName);
+                    }
+                    return a.accountName.localeCompare(b.accountName);
+                });
+                
+                // 필터 옵션 업데이트
+                updateFilterOptions();
+                
+                // 정렬된 데이터로 테이블 표시
+                displayInventoryTable(allInventoryData);
+                // 게임별 요약 표시 (서버 개수 많은 순으로 정렬)
                 const summaryContainer = document.getElementById('inventorySummary');
                 if (summaryContainer) {
                     summaryContainer.innerHTML = '';
                     
-                    Object.values(gameSummary).forEach(game => {
+                    // 서버 개수가 많은 순으로 정렬
+                    const sortedGames = Object.values(gameSummary).sort((a, b) => {
+                        return Object.keys(b.servers).length - Object.keys(a.servers).length;
+                    });
+                    
+                    sortedGames.forEach(game => {
                         const gameCard = document.createElement('div');
                         gameCard.className = 'game-card';
                         
@@ -395,7 +551,7 @@
                     // 데이터가 없을 때 메시지 표시
                     if (Object.keys(gameSummary).length === 0) {
                         summaryContainer.innerHTML = `
-                            <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 40px;">
+                            <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 30px;">
                                 📦 등록된 재고가 없습니다.
                             </div>
                         `;
