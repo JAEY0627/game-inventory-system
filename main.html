@@ -91,19 +91,20 @@
             backdrop-filter: blur(15px);
             border: 2px solid #00ff88;
             border-radius: 20px;
-            padding: 30px;
+            padding: 20px;
             margin-bottom: 30px;
             box-shadow: 
                 0 0 20px rgba(0, 255, 136, 0.3),
                 inset 0 0 20px rgba(0, 255, 136, 0.1);
+            overflow: hidden;
         }
 
         .chart-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #00ff88;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             text-transform: uppercase;
             letter-spacing: 2px;
             text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
@@ -114,7 +115,7 @@
             backdrop-filter: blur(15px);
             border: 2px solid #00ff88;
             border-radius: 20px;
-            padding: 30px;
+            padding: 20px;
             margin-bottom: 30px;
             box-shadow: 
                 0 0 20px rgba(0, 255, 136, 0.3),
@@ -293,12 +294,16 @@
             <div class="chart-grid">
                 <div class="chart-container">
                     <div class="chart-title">📈 월별 판매 추이</div>
-                    <canvas id="monthlySalesChart" width="400" height="200"></canvas>
+                    <div style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="monthlySalesChart" style="max-width: 100%; max-height: 100%;"></canvas>
+                    </div>
                 </div>
 
                 <div class="chart-container">
                     <div class="chart-title">💰 월별 수익 비교</div>
-                    <canvas id="monthlyProfitChart" width="400" height="200"></canvas>
+                    <div style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="monthlyProfitChart" style="max-width: 100%; max-height: 100%;"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -528,6 +533,7 @@
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             labels: {
@@ -605,6 +611,7 @@
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             labels: {
