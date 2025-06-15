@@ -580,3 +580,18 @@ body.loading {
 .modal[style*="block"] .modal-content {
     transform: translateY(0);
 }
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(100, 100, 100, 0.3);
+    border-color: #666;
+    color: #999 !important;
+    text-shadow: none;
+}
+
+.btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+    background: rgba(100, 100, 100, 0.3);
+}

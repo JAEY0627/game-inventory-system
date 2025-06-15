@@ -289,7 +289,7 @@
             <span>또는</span>
         </div>
         
-        <button type="button" class="btn btn-secondary" id="guestLoginBtn">게스트로 둘러보기</button>
+        <button type="button" class="btn btn-secondary" id="guestLoginBtn" disabled>게스트 기능 비활성화</button>
         
         <div class="guest-info">
             💡 게스트 모드에서는 데이터 조회만 가능하며, 추가/수정/삭제 기능은 제한됩니다.
@@ -338,6 +338,9 @@
 
         // 게스트 로그인 처리
         document.getElementById('guestLoginBtn').addEventListener('click', async () => {
+            if (document.getElementById('guestLoginBtn').disabled) {
+                return; // disabled 상태면 실행 안함
+            }
             try {
                 await signInAnonymously(auth);
                 showNotification('게스트로 로그인되었습니다!', 'success');
