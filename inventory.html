@@ -33,7 +33,7 @@
             display: flex;
             flex-direction: column;
             height: auto;
-            min-height: 200px;
+            min-height: 250px;
         }
 
         .game-card::before {
@@ -104,7 +104,20 @@
             text-shadow: 0 0 5px rgba(0, 255, 136, 0.8);
         }
 
-        .total-diamonds {
+        .server-price {
+            color: #ffaa00;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .server-value {
+            color: #ff0099;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .total-section {
             background: rgba(255, 0, 153, 0.1);
             border: 2px solid #ff0099;
             border-radius: 8px;
@@ -113,6 +126,10 @@
             position: relative;
             z-index: 1;
             margin-top: auto;
+        }
+
+        .total-diamonds {
+            margin-bottom: 8px;
         }
 
         .total-diamonds .label {
@@ -129,10 +146,90 @@
             text-shadow: 0 0 10px rgba(255, 0, 153, 0.8);
         }
 
+        .total-value {
+            border-top: 1px solid #ff0099;
+            padding-top: 8px;
+        }
+
+        .total-value .label {
+            color: #ffaa00;
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .total-value .value {
+            color: #ffaa00;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 170, 0, 0.8);
+        }
+
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 15px;
+        }
+
+        .price-management-card {
+            background: linear-gradient(45deg, rgba(255, 170, 0, 0.2), rgba(255, 0, 153, 0.2));
+            border: 2px solid #ffaa00;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            grid-column: 1 / -1;
+            margin-bottom: 15px;
+        }
+
+        .price-management-card .card-title {
+            color: #ffaa00;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 170, 0, 0.8);
+            margin-bottom: 15px;
+        }
+
+        .inline-price-edit {
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-width: 60px;
+            text-align: center;
+            color: #ffaa00;
+            font-size: 11px;
+        }
+
+        .inline-price-edit:hover {
+            background: rgba(255, 170, 0, 0.1);
+            border-color: #ffaa00;
+        }
+
+        .inline-price-edit.editing {
+            background: rgba(255, 170, 0, 0.2);
+            border-color: #ffaa00;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+        }
+
+        .inline-price-input {
+            background: rgba(255, 170, 0, 0.2);
+            border: 2px solid #ffaa00;
+            color: #ffaa00;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-align: center;
+            min-width: 60px;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .inline-price-input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.8);
         }
 
         /* 인라인 수정 관련 스타일 */
@@ -212,10 +309,19 @@
             </div>
         </div>
 
+        <!-- 시세 관리 카드 -->
+        <div class="price-management-card">
+            <div class="card-title">💰 시세 관리</div>
+            <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <button class="btn btn-warning" onclick="openPriceManagementModal()">💰 시세 설정</button>
+                <span style="color: #666; font-size: 12px;">게임별/서버별 다이아 시세를 설정하고 예상가치를 확인하세요</span>
+            </div>
+        </div>
+
         <!-- 게임별 재고 요약 섹션 -->
         <div class="summary-section">
             <div class="section-title">
-                <span>🎮 게임별 재고 현황</span>
+                <span>🎮 게임별 재고 현황 & 예상가치</span>
             </div>
             <div class="summary-grid" id="inventorySummary">
                 <!-- 게임별 요약이 여기에 표시됩니다 -->
@@ -239,6 +345,10 @@
                 <div style="background: linear-gradient(45deg, rgba(46, 213, 115, 0.2), rgba(123, 237, 159, 0.2)); border: 2px solid #2ed573; padding: 25px; border-radius: 15px; text-align: center; position: relative; overflow: hidden;">
                     <h4 style="margin-bottom: 15px; color: #2ed573;">💎 총 다이아개수</h4>
                     <div class="summary-value" id="totalDiamonds" style="font-size: 24px; color: #2ed573;">0개</div>
+                </div>
+                <div style="background: linear-gradient(45deg, rgba(255, 170, 0, 0.2), rgba(255, 99, 72, 0.2)); border: 2px solid #ffaa00; padding: 25px; border-radius: 15px; text-align: center; position: relative; overflow: hidden;">
+                    <h4 style="margin-bottom: 15px; color: #ffaa00;">💰 총 예상가치</h4>
+                    <div class="summary-value" id="totalEstimatedValue" style="font-size: 24px; color: #ffaa00;">0원</div>
                 </div>
             </div>
 
@@ -272,7 +382,7 @@
 
             <!-- 빠른 수정 안내 -->
             <div class="quick-edit-info">
-                💡 <strong>빠른 수정:</strong> 다이아 개수를 클릭하면 바로 수정할 수 있습니다! (Enter로 저장, Esc로 취소)
+                💡 <strong>빠른 수정:</strong> 다이아 개수와 시세를 클릭하면 바로 수정할 수 있습니다! (Enter로 저장, Esc로 취소)
             </div>
 
             <div class="table-container">
@@ -284,6 +394,8 @@
                             <th>컴퓨터명</th>
                             <th>계정명</th>
                             <th>다이아개수</th>
+                            <th>현재시세</th>
+                            <th>예상가치</th>
                             <th>작성자/관리</th>
                         </tr>
                     </thead>
@@ -333,10 +445,72 @@
         </div>
     </div>
 
+    <!-- 시세 관리 모달 -->
+    <div id="priceManagementModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 class="modal-title">💰 시세 관리</h3>
+                <span class="close" onclick="closePriceManagementModal()">&times;</span>
+            </div>
+            
+            <!-- 시세 추가/수정 폼을 상단으로 이동 -->
+            <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+                <h4 style="color: #00ff88; margin-bottom: 15px;" id="priceFormTitle">📝 새 시세 추가</h4>
+                <form id="priceForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>게임명</label>
+                            <select id="priceGameName" required>
+                                <option value="">게임을 선택하세요</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>서버명</label>
+                            <select id="priceServerName" required disabled>
+                                <option value="">먼저 게임을 선택하세요</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>시세 (원/만개)</label>
+                            <input type="number" id="priceValue" placeholder="시세를 입력하세요" required>
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-top: 15px; display: flex; gap: 8px; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="resetPriceForm()">취소</button>
+                        <button type="submit" class="btn btn-primary" id="priceSubmitBtn">➕ 추가</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 현재 설정된 시세 목록을 하단으로 이동 -->
+            <div>
+                <h4 style="color: #00ff88; margin-bottom: 15px;">📊 현재 설정된 시세 목록</h4>
+                <div class="table-container">
+                    <table id="priceTable" style="font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th>게임명</th>
+                                <th>서버명</th>
+                                <th>시세 (원/만개)</th>
+                                <th>재고수량</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="priceTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div style="text-align: center; color: #666; font-size: 12px; margin-top: 10px; padding: 10px;">
+                    💡 <strong>팁:</strong> 시세를 수정하려면 목록에서 "수정" 버튼을 클릭하세요
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, query, where, setDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
         import { getUserGameFilter, shouldFilterByGame } from './common.js';
 
         // Firebase 초기화
@@ -356,7 +530,280 @@
         let editingDocId = null;
         let editingType = null;
         let allInventoryData = [];
+        let marketPrices = {};
         let currentUser = null;
+        let editingPriceKey = null; // 시세 수정 중인 키
+
+        // 시세 관련 함수들
+        function getMarketPrice(gameName, serverName) {
+            const key = `${gameName}_${serverName}`;
+            return marketPrices[key] || 0;
+        }
+
+        function calculateEstimatedValue(diamondCount, price) {
+            return Math.round((diamondCount / 10000) * price);
+        }
+
+        // 재고에서 게임-서버 조합 추출
+        function getInventoryGameServers() {
+            const gameServers = {};
+            
+            allInventoryData.forEach(item => {
+                if (!gameServers[item.gameName]) {
+                    gameServers[item.gameName] = new Set();
+                }
+                gameServers[item.gameName].add(item.serverName);
+            });
+            
+            // Set을 Array로 변환
+            Object.keys(gameServers).forEach(game => {
+                gameServers[game] = Array.from(gameServers[game]).sort();
+            });
+            
+            return gameServers;
+        }
+
+        // 재고 수량 계산
+        function getInventoryCount(gameName, serverName) {
+            return allInventoryData
+                .filter(item => item.gameName === gameName && item.serverName === serverName)
+                .reduce((sum, item) => sum + (item.diamondCount || 0), 0);
+        }
+
+        // 시세 데이터 로드
+        async function loadMarketPrices() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'marketPrices'));
+                marketPrices = {};
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const key = `${data.gameName}_${data.serverName}`;
+                    marketPrices[key] = data.price;
+                });
+                
+                updatePriceTable();
+                updateGameServerSelectors();
+            } catch (error) {
+                console.error('시세 데이터 로드 실패:', error);
+            }
+        }
+
+        // 게임/서버 선택기 업데이트
+        function updateGameServerSelectors() {
+            const gameSelect = document.getElementById('priceGameName');
+            const serverSelect = document.getElementById('priceServerName');
+            
+            if (!gameSelect || !serverSelect) return;
+            
+            const inventoryGameServers = getInventoryGameServers();
+            
+            // 게임 선택기 업데이트
+            gameSelect.innerHTML = '<option value="">게임을 선택하세요</option>';
+            
+            Object.keys(inventoryGameServers).forEach(gameName => {
+                const servers = inventoryGameServers[gameName];
+                // 해당 게임에 시세가 설정되지 않은 서버가 있는지 확인
+                const hasUnsetPrices = servers.some(serverName => {
+                    const key = `${gameName}_${serverName}`;
+                    return !marketPrices[key];
+                });
+                
+                if (hasUnsetPrices) {
+                    const option = document.createElement('option');
+                    option.value = gameName;
+                    option.textContent = gameName;
+                    gameSelect.appendChild(option);
+                }
+            });
+            
+            // 서버 선택기 초기화
+            serverSelect.innerHTML = '<option value="">먼저 게임을 선택하세요</option>';
+            serverSelect.disabled = true;
+        }
+
+        // 게임 선택 시 서버 업데이트
+        function updateServerSelector() {
+            const gameSelect = document.getElementById('priceGameName');
+            const serverSelect = document.getElementById('priceServerName');
+            
+            if (!gameSelect || !serverSelect) return;
+            
+            const selectedGame = gameSelect.value;
+            
+            if (!selectedGame) {
+                serverSelect.innerHTML = '<option value="">먼저 게임을 선택하세요</option>';
+                serverSelect.disabled = true;
+                return;
+            }
+            
+            const inventoryGameServers = getInventoryGameServers();
+            const servers = inventoryGameServers[selectedGame] || [];
+            
+            serverSelect.innerHTML = '<option value="">서버를 선택하세요</option>';
+            serverSelect.disabled = false;
+            
+            // 시세가 설정되지 않은 서버만 표시
+            servers.forEach(serverName => {
+                const key = `${selectedGame}_${serverName}`;
+                if (!marketPrices[key]) {
+                    const option = document.createElement('option');
+                    option.value = serverName;
+                    option.textContent = serverName;
+                    serverSelect.appendChild(option);
+                }
+            });
+        }
+
+        // 시세 테이블 업데이트
+        function updatePriceTable() {
+            const tbody = document.getElementById('priceTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            Object.entries(marketPrices).forEach(([key, price]) => {
+                const [gameName, serverName] = key.split('_');
+                const inventoryCount = getInventoryCount(gameName, serverName);
+                const row = tbody.insertRow();
+                
+                let actionButtons = '';
+                if (hasEditPermission()) {
+                    actionButtons = `
+                        <button class="btn btn-warning btn-small" onclick="editPrice('${key}')">수정</button>
+                        <button class="btn btn-danger btn-small" onclick="deletePrice('${key}')">삭제</button>
+                    `;
+                } else {
+                    actionButtons = '<span style="color: #999; font-size: 10px;">읽기 전용</span>';
+                }
+                
+                row.innerHTML = `
+                    <td>${gameName}</td>
+                    <td>${serverName}</td>
+                    <td>${price.toLocaleString()}원</td>
+                    <td style="color: #00ccff;">${inventoryCount.toLocaleString()}개</td>
+                    <td>${actionButtons}</td>
+                `;
+            });
+        }
+
+        // 시세 수정 함수
+        window.editPrice = function(key) {
+            if (!checkEditPermission('시세 수정')) return;
+            
+            const [gameName, serverName] = key.split('_');
+            const price = marketPrices[key];
+            
+            editingPriceKey = key;
+            
+            // 폼 제목 및 버튼 변경
+            document.getElementById('priceFormTitle').textContent = '✏️ 시세 수정';
+            document.getElementById('priceSubmitBtn').innerHTML = '✅ 수정 완료';
+            document.getElementById('priceSubmitBtn').className = 'btn btn-warning';
+            
+            // 게임/서버 선택기를 텍스트 입력으로 변경
+            const gameSelect = document.getElementById('priceGameName');
+            const serverSelect = document.getElementById('priceServerName');
+            
+            gameSelect.innerHTML = `<option value="${gameName}" selected>${gameName}</option>`;
+            gameSelect.disabled = true;
+            
+            serverSelect.innerHTML = `<option value="${serverName}" selected>${serverName}</option>`;
+            serverSelect.disabled = true;
+            
+            document.getElementById('priceValue').value = price;
+            document.getElementById('priceValue').focus();
+            document.getElementById('priceValue').select();
+        };
+
+        // 시세 폼 리셋
+        window.resetPriceForm = function() {
+            editingPriceKey = null;
+            document.getElementById('priceFormTitle').textContent = '📝 새 시세 추가';
+            document.getElementById('priceSubmitBtn').innerHTML = '➕ 추가';
+            document.getElementById('priceSubmitBtn').className = 'btn btn-primary';
+            document.getElementById('priceForm').reset();
+            
+            // 선택기들 활성화 및 초기화
+            const gameSelect = document.getElementById('priceGameName');
+            const serverSelect = document.getElementById('priceServerName');
+            
+            gameSelect.disabled = false;
+            serverSelect.disabled = true;
+            
+            updateGameServerSelectors();
+        };
+
+        // 시세 추가/수정
+        window.addPrice = async function() {
+            if (!checkEditPermission('시세 관리')) return;
+            
+            const gameName = document.getElementById('priceGameName').value.trim();
+            const serverName = document.getElementById('priceServerName').value.trim();
+            const price = parseInt(document.getElementById('priceValue').value);
+            
+            if (!gameName || !serverName || !price) {
+                showNotification('모든 필드를 입력해주세요.', 'error');
+                return;
+            }
+            
+            try {
+                const docId = `${gameName}_${serverName}`;
+                await setDoc(doc(db, 'marketPrices', docId), {
+                    gameName: gameName,
+                    serverName: serverName,
+                    price: price,
+                    updatedAt: new Date()
+                });
+                
+                const action = editingPriceKey ? '수정' : '추가';
+                showNotification(`시세가 ${action}되었습니다!`, 'success');
+                
+                resetPriceForm();
+                loadMarketPrices();
+                loadInventoryData(); // 재고 데이터 새로고침
+            } catch (error) {
+                showNotification('시세 저장 실패: ' + error.message, 'error');
+            }
+        };
+
+        // 시세 삭제
+        window.deletePrice = async function(key) {
+            if (!checkEditPermission('시세 삭제')) return;
+            
+            const [gameName, serverName] = key.split('_');
+            
+            if (confirm(`${gameName} - ${serverName}의 시세를 정말 삭제하시겠습니까?`)) {
+                try {
+                    await deleteDoc(doc(db, 'marketPrices', key));
+                    showNotification('시세가 삭제되었습니다.', 'success');
+                    loadMarketPrices();
+                    loadInventoryData(); // 재고 데이터 새로고침
+                } catch (error) {
+                    showNotification('삭제 실패: ' + error.message, 'error');
+                }
+            }
+        };
+
+        // 시세 관리 모달
+        window.openPriceManagementModal = function() {
+            if (!checkEditPermission('시세 관리')) return;
+            resetPriceForm();
+            document.getElementById('priceManagementModal').style.display = 'block';
+        };
+
+        window.closePriceManagementModal = function() {
+            document.getElementById('priceManagementModal').style.display = 'none';
+            resetPriceForm();
+        };
+
+        // 게임 선택 이벤트 리스너
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameSelect = document.getElementById('priceGameName');
+            if (gameSelect) {
+                gameSelect.addEventListener('change', updateServerSelector);
+            }
+        });
 
         // 유틸리티 함수들
         function isAnonymousUser() {
@@ -413,6 +860,7 @@
                         userEmailElement.textContent = user.email;
                     }
                 }
+                loadMarketPrices();
                 loadInventoryData();
             } else {
                 window.location.href = 'index.html';
@@ -426,12 +874,20 @@
         function updateInventoryStats(data) {
             const totalAccounts = data.length;
             const totalDiamonds = data.reduce((sum, item) => sum + (item.diamondCount || 0), 0);
+            let totalEstimatedValue = 0;
+            
+            data.forEach(item => {
+                const price = getMarketPrice(item.gameName, item.serverName);
+                totalEstimatedValue += calculateEstimatedValue(item.diamondCount || 0, price);
+            });
             
             const totalAccountsElement = document.getElementById('totalAccounts');
             const totalDiamondsElement = document.getElementById('totalDiamonds');
+            const totalEstimatedValueElement = document.getElementById('totalEstimatedValue');
             
             if (totalAccountsElement) totalAccountsElement.textContent = totalAccounts.toLocaleString() + '개';
             if (totalDiamondsElement) totalDiamondsElement.textContent = totalDiamonds.toLocaleString() + '개';
+            if (totalEstimatedValueElement) totalEstimatedValueElement.textContent = totalEstimatedValue.toLocaleString() + '원';
         }
 
         // 검색/필터 함수
@@ -516,7 +972,7 @@
             if (hasEditPermission()) {
                 span.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    startInlineEdit(span);
+                    startInlineEdit(span, 'diamond');
                 });
                 span.title = '클릭하여 수정';
                 span.style.cursor = 'pointer';
@@ -527,30 +983,61 @@
             return span;
         }
 
-        function startInlineEdit(element) {
+        // 인라인 시세 수정 함수
+        function createInlineEditPrice(gameName, serverName) {
+            const span = document.createElement('span');
+            span.className = 'inline-price-edit';
+            const price = getMarketPrice(gameName, serverName);
+            span.textContent = price ? price.toLocaleString() + '원' : '미설정';
+            span.setAttribute('data-game-name', gameName);
+            span.setAttribute('data-server-name', serverName);
+            span.setAttribute('data-original-value', price);
+            
+            if (hasEditPermission()) {
+                span.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    startInlineEdit(span, 'price');
+                });
+                span.title = '클릭하여 수정';
+                span.style.cursor = 'pointer';
+            } else {
+                span.style.cursor = 'default';
+            }
+            
+            return span;
+        }
+
+        function startInlineEdit(element, type) {
             if (!hasEditPermission()) {
                 showNotification('수정 권한이 없습니다.', 'error');
                 return;
             }
             
             // 이미 편집 중인 다른 요소가 있다면 복원
-            const existingInput = document.querySelector('.inline-input');
+            const existingInput = document.querySelector('.inline-input, .inline-price-input');
             if (existingInput) {
                 restoreFromEdit(existingInput);
             }
             
-            const currentValue = element.getAttribute('data-original-value');
-            const docId = element.getAttribute('data-doc-id');
-            
             const input = document.createElement('input');
             input.type = 'number';
-            input.className = 'inline-input';
-            input.value = currentValue;
             input.min = '0';
             input.step = '1';
             
+            if (type === 'diamond') {
+                input.className = 'inline-input';
+                const currentValue = element.getAttribute('data-original-value');
+                input.value = currentValue;
+            } else if (type === 'price') {
+                input.className = 'inline-price-input';
+                const currentValue = element.getAttribute('data-original-value');
+                input.value = currentValue || '';
+                input.placeholder = '시세';
+            }
+            
             // 원본 요소를 input에 저장
             input._originalElement = element;
+            input._editType = type;
             
             element.parentNode.replaceChild(input, element);
             input.focus();
@@ -564,13 +1051,28 @@
                     return;
                 }
                 
-                // 값이 변경되지 않았다면 취소와 동일하게 처리
-                if (newValue == currentValue) {
-                    cancelEdit();
-                    return;
+                if (type === 'diamond') {
+                    const docId = element.getAttribute('data-doc-id');
+                    const currentValue = element.getAttribute('data-original-value');
+                    
+                    if (newValue == currentValue) {
+                        cancelEdit();
+                        return;
+                    }
+                    
+                    updateDiamondCount(docId, newValue, input);
+                } else if (type === 'price') {
+                    const gameName = element.getAttribute('data-game-name');
+                    const serverName = element.getAttribute('data-server-name');
+                    const currentValue = element.getAttribute('data-original-value');
+                    
+                    if (newValue == currentValue) {
+                        cancelEdit();
+                        return;
+                    }
+                    
+                    updateMarketPrice(gameName, serverName, newValue, input);
                 }
-                
-                updateDiamondCount(docId, newValue, input);
             }
             
             function cancelEdit() {
@@ -588,7 +1090,6 @@
             });
             
             input.addEventListener('blur', function() {
-                // 조금 지연시켜서 다른 이벤트가 처리될 시간을 줌
                 setTimeout(() => {
                     if (document.activeElement !== input && input.parentNode) {
                         saveEdit();
@@ -599,12 +1100,13 @@
 
         function restoreFromEdit(input) {
             if (input && input._originalElement && input.parentNode) {
-                // 원본 요소의 클릭 이벤트 다시 연결
                 const originalElement = input._originalElement;
+                const editType = input._editType;
+                
                 if (hasEditPermission()) {
                     originalElement.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        startInlineEdit(originalElement);
+                        startInlineEdit(originalElement, editType);
                     });
                 }
                 input.parentNode.replaceChild(originalElement, input);
@@ -613,11 +1115,8 @@
 
         async function updateDiamondCount(docId, newValue, input) {
             try {
-                // 로딩 표시
-                if (input) {
-                    input.disabled = true;
-                    input.style.opacity = '0.5';
-                }
+                input.disabled = true;
+                input.style.opacity = '0.5';
                 
                 const docRef = doc(db, 'inventory', docId);
                 await updateDoc(docRef, {
@@ -627,31 +1126,62 @@
                 
                 showNotification('다이아 개수가 업데이트되었습니다!', 'success');
                 
-                // 로컬 데이터 업데이트
                 const itemIndex = allInventoryData.findIndex(item => item.id === docId);
                 if (itemIndex !== -1) {
                     allInventoryData[itemIndex].diamondCount = newValue;
                 }
                 
-                // 새로운 값으로 엘리먼트 생성
                 const newElement = createInlineEditDiamond(newValue, docId);
                 
-                // input을 새 엘리먼트로 교체
                 if (input && input.parentNode) {
                     input.parentNode.replaceChild(newElement, input);
                 }
                 
-                // 게임별 요약과 통계 업데이트
                 updateGameSummary();
-                
-                // 현재 필터된 데이터로 통계 업데이트
                 const filteredData = getCurrentFilteredData();
                 updateInventoryStats(filteredData);
                 
             } catch (error) {
                 showNotification('업데이트 실패: ' + error.message, 'error');
                 
-                // 실패 시 원래 값으로 복원
+                if (input && input._originalElement) {
+                    restoreFromEdit(input);
+                }
+            }
+        }
+
+        async function updateMarketPrice(gameName, serverName, newPrice, input) {
+            try {
+                input.disabled = true;
+                input.style.opacity = '0.5';
+                
+                const docId = `${gameName}_${serverName}`;
+                await setDoc(doc(db, 'marketPrices', docId), {
+                    gameName: gameName,
+                    serverName: serverName,
+                    price: newPrice,
+                    updatedAt: new Date()
+                });
+                
+                showNotification('시세가 업데이트되었습니다!', 'success');
+                
+                const key = `${gameName}_${serverName}`;
+                marketPrices[key] = newPrice;
+                
+                const newElement = createInlineEditPrice(gameName, serverName);
+                
+                if (input && input.parentNode) {
+                    input.parentNode.replaceChild(newElement, input);
+                }
+                
+                updateGameSummary();
+                const filteredData = getCurrentFilteredData();
+                updateInventoryStats(filteredData);
+                updatePriceTable();
+                
+            } catch (error) {
+                showNotification('시세 업데이트 실패: ' + error.message, 'error');
+                
                 if (input && input._originalElement) {
                     restoreFromEdit(input);
                 }
@@ -698,16 +1228,25 @@
                     gameSummary[gameName] = {
                         gameName: gameName,
                         servers: {},
-                        totalDiamonds: 0
+                        totalDiamonds: 0,
+                        totalValue: 0
                     };
                 }
                 
                 if (!gameSummary[gameName].servers[data.serverName]) {
-                    gameSummary[gameName].servers[data.serverName] = 0;
+                    gameSummary[gameName].servers[data.serverName] = {
+                        diamonds: 0,
+                        value: 0
+                    };
                 }
                 
-                gameSummary[gameName].servers[data.serverName] += data.diamondCount;
+                const price = getMarketPrice(data.gameName, data.serverName);
+                const estimatedValue = calculateEstimatedValue(data.diamondCount, price);
+                
+                gameSummary[gameName].servers[data.serverName].diamonds += data.diamondCount;
+                gameSummary[gameName].servers[data.serverName].value += estimatedValue;
                 gameSummary[gameName].totalDiamonds += data.diamondCount;
+                gameSummary[gameName].totalValue += estimatedValue;
             });
             
             const summaryContainer = document.getElementById('inventorySummary');
@@ -722,21 +1261,32 @@
                     const gameCard = document.createElement('div');
                     gameCard.className = 'game-card';
                     
-                    const serverItems = Object.entries(game.servers).map(([serverName, diamonds]) => `
-                        <div class="server-item">
-                            <div class="server-name">${serverName}</div>
-                            <div class="diamond-count">${diamonds.toLocaleString()}</div>
-                        </div>
-                    `).join('');
+                    const serverItems = Object.entries(game.servers).map(([serverName, data]) => {
+                        const price = getMarketPrice(game.gameName, serverName);
+                        return `
+                            <div class="server-item">
+                                <div class="server-name">${serverName}</div>
+                                <div class="diamond-count">${data.diamonds.toLocaleString()}개</div>
+                                <div class="server-price">${price ? price.toLocaleString() + '원/만' : '시세미설정'}</div>
+                                <div class="server-value">${data.value.toLocaleString()}원</div>
+                            </div>
+                        `;
+                    }).join('');
                     
                     gameCard.innerHTML = `
                         <div class="game-title">🎮 ${game.gameName}</div>
                         <div class="server-list">
                             ${serverItems}
                         </div>
-                        <div class="total-diamonds">
-                            <div class="label">💎 총 다이아</div>
-                            <div class="value">${game.totalDiamonds.toLocaleString()}</div>
+                        <div class="total-section">
+                            <div class="total-diamonds">
+                                <div class="label">💎 총 다이아</div>
+                                <div class="value">${game.totalDiamonds.toLocaleString()}개</div>
+                            </div>
+                            <div class="total-value">
+                                <div class="label">💰 예상가치</div>
+                                <div class="value">${game.totalValue.toLocaleString()}원</div>
+                            </div>
                         </div>
                     `;
                     
@@ -791,6 +1341,19 @@
                 const diamondElement = createInlineEditDiamond(item.diamondCount, item.id);
                 diamondCell.appendChild(diamondElement);
                 
+                // 시세 셀 - 인라인 수정 가능
+                const priceCell = row.insertCell();
+                const priceElement = createInlineEditPrice(item.gameName, item.serverName);
+                priceCell.appendChild(priceElement);
+                
+                // 예상가치 셀
+                const valueCell = row.insertCell();
+                const price = getMarketPrice(item.gameName, item.serverName);
+                const estimatedValue = calculateEstimatedValue(item.diamondCount, price);
+                valueCell.textContent = estimatedValue.toLocaleString() + '원';
+                valueCell.style.color = '#ff0099';
+                valueCell.style.fontWeight = 'bold';
+                
                 // 관리 셀
                 const actionCell = row.insertCell();
                 actionCell.innerHTML = `
@@ -805,7 +1368,6 @@
             const userGameFilter = getUserGameFilter(auth.currentUser.email);
             
             if (userGameFilter) {
-                // 게임명 필드를 readonly로 만들고 기본값 설정
                 const gameNameInput = document.getElementById('gameName') || document.getElementById('invGameName');
                 if (gameNameInput) {
                     gameNameInput.value = userGameFilter;
@@ -833,7 +1395,6 @@
                 document.getElementById('inventorySubmitBtn').textContent = '추가';
                 document.getElementById('inventoryForm').reset();
 
-                // 게임명 제한 적용
                 setTimeout(() => {
                     restrictGameNameInput();
                 }, 100);
@@ -880,12 +1441,10 @@
 
             try {
                 if (editingDocId && editingType === 'inventory') {
-                    // 수정 시에는 updatedAt만 추가하고 createdAt은 유지
                     inventoryData.updatedAt = new Date();
                     await updateDoc(doc(db, 'inventory', editingDocId), inventoryData);
                     showNotification('재고가 수정되었습니다.', 'success');
                 } else {
-                    // 새로 추가할 때만 createdAt 설정
                     inventoryData.createdAt = new Date();
                     await addDoc(collection(db, 'inventory'), inventoryData);
                     showNotification('재고가 추가되었습니다.', 'success');
@@ -904,39 +1463,20 @@
                 const userGameFilter = getUserGameFilter(auth.currentUser.email);
                 
                 if (userGameFilter) {
-                    // 특정 게임만 조회
                     const q = query(
                         collection(db, 'inventory'), 
                         where('gameName', '==', userGameFilter)
                     );
                     querySnapshot = await getDocs(q);
                 } else {
-                    // 모든 게임 조회
                     querySnapshot = await getDocs(collection(db, 'inventory'));
                 }
                 
-                const gameSummary = {};
                 allInventoryData = [];
                 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     allInventoryData.push({ id: doc.id, ...data });
-                    
-                    const gameName = data.gameName;
-                    if (!gameSummary[gameName]) {
-                        gameSummary[gameName] = {
-                            gameName: gameName,
-                            servers: {},
-                            totalDiamonds: 0
-                        };
-                    }
-                    
-                    if (!gameSummary[gameName].servers[data.serverName]) {
-                        gameSummary[gameName].servers[data.serverName] = 0;
-                    }
-                    
-                    gameSummary[gameName].servers[data.serverName] += data.diamondCount;
-                    gameSummary[gameName].totalDiamonds += data.diamondCount;
                 });
                 
                 allInventoryData.sort((a, b) => {
@@ -955,48 +1495,9 @@
                 updateFilterOptions();
                 displayInventoryTable(allInventoryData);
                 updateInventoryStats(allInventoryData);
+                updateGameSummary();
+                updateGameServerSelectors(); // 게임/서버 선택기 업데이트
                 
-                const summaryContainer = document.getElementById('inventorySummary');
-                if (summaryContainer) {
-                    summaryContainer.innerHTML = '';
-                    
-                    const sortedGames = Object.values(gameSummary).sort((a, b) => {
-                        return Object.keys(b.servers).length - Object.keys(a.servers).length;
-                    });
-                    
-                    sortedGames.forEach(game => {
-                        const gameCard = document.createElement('div');
-                        gameCard.className = 'game-card';
-                        
-                        const serverItems = Object.entries(game.servers).map(([serverName, diamonds]) => `
-                            <div class="server-item">
-                                <div class="server-name">${serverName}</div>
-                                <div class="diamond-count">${diamonds.toLocaleString()}</div>
-                            </div>
-                        `).join('');
-                        
-                        gameCard.innerHTML = `
-                            <div class="game-title">🎮 ${game.gameName}</div>
-                            <div class="server-list">
-                                ${serverItems}
-                            </div>
-                            <div class="total-diamonds">
-                                <div class="label">💎 총 다이아</div>
-                                <div class="value">${game.totalDiamonds.toLocaleString()}</div>
-                            </div>
-                        `;
-                        
-                        summaryContainer.appendChild(gameCard);
-                    });
-                    
-                    if (Object.keys(gameSummary).length === 0) {
-                        summaryContainer.innerHTML = `
-                            <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 30px;">
-                                📦 등록된 재고가 없습니다.
-                            </div>
-                        `;
-                    }
-                }
             } catch (error) {
                 console.error('데이터 로드 실패:', error);
                 showNotification('데이터 로드 실패: ' + error.message, 'error');
@@ -1026,6 +1527,20 @@
                     modal.style.display = 'none';
                 }
             });
+        });
+
+        // 시세 폼 처리
+        document.getElementById('priceForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            addPrice();
+        });
+
+        // 게임 선택 이벤트 리스너 추가
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameSelect = document.getElementById('priceGameName');
+            if (gameSelect) {
+                gameSelect.addEventListener('change', updateServerSelector);
+            }
         });
     </script>
 </body>

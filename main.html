@@ -172,6 +172,16 @@
             text-shadow: 0 0 15px rgba(255, 0, 153, 0.8) !important;
         }
 
+        .estimated-value-card {
+            border-color: #ffaa00 !important;
+        }
+
+        .estimated-value-card .card-title,
+        .estimated-value-card .card-value {
+            color: #ffaa00 !important;
+            text-shadow: 0 0 15px rgba(255, 170, 0, 0.8) !important;
+        }
+
         .chart-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -300,6 +310,24 @@
                     </div>
                     <div class="card-subtitle">보유 다이아 총량</div>
                 </div>
+
+                <div class="dashboard-card estimated-value-card">
+                    <div class="card-icon">💰</div>
+                    <div class="card-title">재고 예상가치</div>
+                    <div class="card-value" id="totalEstimatedValue">
+                        <span class="loading-spinner"></span>
+                    </div>
+                    <div class="card-subtitle">현재 시세 기준</div>
+                </div>
+
+                <div class="dashboard-card" style="border-color: #00ff00 !important;">
+                    <div class="card-icon">🎯</div>
+                    <div class="card-title" style="color: #00ff00 !important; text-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;">최종 예상 순이익</div>
+                    <div class="card-value" id="finalEstimatedProfit" style="color: #00ff00 !important; text-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;">
+                        <span class="loading-spinner"></span>
+                    </div>
+                    <div class="card-subtitle" style="color: #00ff00 !important;">순이익 + 재고예상가치</div>
+                </div>
             </div>
 
             <!-- 차트 섹션 -->
@@ -374,6 +402,7 @@
 
         let salesChart, profitChart, gameChart;
         let currentUser = null;
+        let marketPrices = {};
 
         // 유틸리티 함수들
         function isAnonymousUser() {
@@ -406,6 +435,32 @@
             }, 3000);
         }
 
+        // 시세 관련 함수들
+        function getMarketPrice(gameName, serverName) {
+            const key = `${gameName}_${serverName}`;
+            return marketPrices[key] || 0;
+        }
+
+        function calculateEstimatedValue(diamondCount, price) {
+            return Math.round((diamondCount / 10000) * price);
+        }
+
+        // 시세 데이터 로드
+        async function loadMarketPrices() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'marketPrices'));
+                marketPrices = {};
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const key = `${data.gameName}_${data.serverName}`;
+                    marketPrices[key] = data.price;
+                });
+            } catch (error) {
+                console.error('시세 데이터 로드 실패:', error);
+            }
+        }
+
         // 인증 상태 확인
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -418,7 +473,10 @@
                         userEmailElement.textContent = user.email;
                     }
                 }
-                setTimeout(loadDashboardData, 500);
+                setTimeout(async () => {
+                    await loadMarketPrices();
+                    loadDashboardData();
+                }, 500);
             } else {
                 window.location.href = 'index.html';
             }
@@ -455,6 +513,7 @@
                     getDocs(collection(db, 'investments')), // 투자는 게임별 필터링 안함
                     getDocs(inventoryQuery)
                 ]);
+
                 // 판매 데이터 처리
                 const sales = [];
                 let totalSales = 0;
@@ -479,13 +538,19 @@
                     totalInvestment += data.amount || 0;
                 });
 
-                // 재고 데이터 처리
+                // 재고 데이터 처리 및 예상가치 계산
                 const inventory = [];
                 let totalInventory = 0;
+                let totalEstimatedValue = 0;
+
                 inventoryData.forEach(doc => {
                     const data = doc.data();
                     inventory.push(data);
                     totalInventory += data.diamondCount || 0;
+                    
+                    // 예상가치 계산
+                    const price = getMarketPrice(data.gameName, data.serverName);
+                    totalEstimatedValue += calculateEstimatedValue(data.diamondCount || 0, price);
                 });
 
                 // 순이익 계산
@@ -498,7 +563,8 @@
                     totalInvestment,
                     totalProfit,
                     totalTransactions,
-                    totalInventory
+                    totalInventory,
+                    totalEstimatedValue
                 });
 
                 // 차트 업데이트
@@ -521,12 +587,27 @@
             document.getElementById('totalProfitValue').textContent = data.totalProfit.toLocaleString() + '원';
             document.getElementById('totalTransactionsValue').textContent = data.totalTransactions.toLocaleString() + '건';
             document.getElementById('totalInventoryValue').textContent = data.totalInventory.toLocaleString() + '개';
+            document.getElementById('totalEstimatedValue').textContent = data.totalEstimatedValue.toLocaleString() + '원';
+            
+            // 최종 예상 순이익 계산 (순이익 + 재고예상가치)
+            const finalEstimatedProfit = data.totalProfit + data.totalEstimatedValue;
+            document.getElementById('finalEstimatedProfit').textContent = finalEstimatedProfit.toLocaleString() + '원';
 
             // 순이익이 음수면 빨간색으로 표시
             const profitElement = document.getElementById('totalProfitValue');
             if (data.totalProfit < 0) {
                 profitElement.style.color = '#ff3333';
                 profitElement.style.textShadow = '0 0 15px rgba(255, 51, 51, 0.8)';
+            }
+
+            // 최종 예상 순이익 색상 조정
+            const finalProfitElement = document.getElementById('finalEstimatedProfit');
+            if (finalEstimatedProfit < 0) {
+                finalProfitElement.style.color = '#ff3333 !important';
+                finalProfitElement.style.textShadow = '0 0 15px rgba(255, 51, 51, 0.8) !important';
+            } else {
+                finalProfitElement.style.color = '#00ff00';
+                finalProfitElement.style.textShadow = '0 0 15px rgba(0, 255, 0, 0.8)';
             }
         }
 
@@ -541,7 +622,6 @@
                     const date = new Date(item.saleDate);
                     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     
-                    // 월 데이터가 없으면 생성
                     if (!monthlyData[monthKey]) {
                         monthlyData[monthKey] = {
                             sales: 0,
@@ -559,11 +639,10 @@
 
             // 투자 데이터 집계
             investmentData.forEach(item => {
-                if (item.investmentDate) {  // item.month 대신 item.investmentDate 사용
+                if (item.investmentDate) {
                     const date = new Date(item.investmentDate);
                     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     
-                    // 월 데이터가 없으면 생성
                     if (!monthlyData[monthKey]) {
                         monthlyData[monthKey] = {
                             sales: 0,
@@ -618,7 +697,6 @@
                 return `${month}월`;
             });
 
-            // 수정 (만원 단위로 변환)
             const salesValues = Object.values(sortedMonthlyData).map(data => Math.round(data.sales / 10000));
             const transactionCounts = Object.values(sortedMonthlyData).map(data => data.transactions);
 
@@ -821,11 +899,11 @@
         async function updateRecentActivities(salesData, investmentData, inventoryData) {
             // 최근 판매 5건 (판매일 기준으로 정렬)
             const recentSales = salesData
-                .filter(item => item.saleDate) // 판매일이 있는 것만
+                .filter(item => item.saleDate)
                 .sort((a, b) => {
                     const dateA = new Date(a.saleDate);
                     const dateB = new Date(b.saleDate);
-                    return dateB - dateA; // 최신 판매일 순
+                    return dateB - dateA;
                 })
                 .slice(0, 5);
 
@@ -852,11 +930,9 @@
             // 최근 투자 5건 (월별 기준으로 정렬)
             const recentInvestments = investmentData
                 .sort((a, b) => {
-                    // 투자일 기준으로 정렬 (최신 순)
                     if (a.investmentDate !== b.investmentDate) {
                         return (b.investmentDate || '').localeCompare(a.investmentDate || '');
                     }
-                    // 같은 날이면 등록일 기준
                     const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
                     const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
                     return dateB - dateA;
@@ -872,7 +948,6 @@
                     minute: '2-digit'
                 });
                 
-                // investmentDate를 사용하여 날짜 표시
                 const investmentDateText = item.investmentDate ? 
                     new Date(item.investmentDate).toLocaleDateString('ko-KR', {
                         year: 'numeric',
@@ -929,7 +1004,6 @@
 
             // 재고 데이터 추가 (updatedAt 우선, 없으면 createdAt 사용)
             inventoryData.forEach(item => {
-                // updatedAt과 createdAt 비교하여 실제 수정 여부 판단
                 let activityDate;
                 let isUpdated = false;
                 
@@ -937,20 +1011,22 @@
                 const updatedDate = item.updatedAt?.toDate ? item.updatedAt.toDate() : null;
                 
                 if (updatedDate && updatedDate > createdDate) {
-                    // updatedAt이 createdAt보다 나중이면 실제 수정된 것
                     activityDate = updatedDate;
                     isUpdated = true;
                 } else {
-                    // updatedAt이 없거나 createdAt과 같으면 최초 생성
                     activityDate = createdDate;
                     isUpdated = false;
                 }
+                
+                // 예상가치 계산
+                const price = getMarketPrice(item.gameName, item.serverName);
+                const estimatedValue = calculateEstimatedValue(item.diamondCount || 0, price);
                 
                 allActivities.push({
                     type: 'inventory',
                     title: `📦 ${item.gameName} - ${item.serverName}`,
                     amount: item.diamondCount || 0,
-                    detail: `${item.computerName} | ${item.accountName}`,
+                    detail: `${item.computerName} | ${item.accountName} | 예상가치: ${estimatedValue.toLocaleString()}원`,
                     createdAt: activityDate,
                     isUpdated: isUpdated
                 });
@@ -985,7 +1061,6 @@
                     amountText = `${item.amount.toLocaleString()}개`;
                 }
                 
-                // 업데이트된 항목에 표시 추가
                 const updatedIndicator = item.isUpdated ? '<span class="updated-indicator">수정됨</span>' : '';
                 
                 return `
@@ -1009,13 +1084,15 @@
             showNotification('대시보드를 새로고침하는 중...', 'info');
             
             // 로딩 스피너 표시
-            const valueElements = ['totalSalesValue', 'totalReceivedValue', 'totalInvestmentValue', 'totalProfitValue', 'totalTransactionsValue', 'totalInventoryValue'];
+            const valueElements = ['totalSalesValue', 'totalReceivedValue', 'totalInvestmentValue', 'totalProfitValue', 'totalTransactionsValue', 'totalInventoryValue', 'totalEstimatedValue', 'finalEstimatedProfit'];
             valueElements.forEach(id => {
                 document.getElementById(id).innerHTML = '<span class="loading-spinner"></span>';
             });
 
-            loadDashboardData().then(() => {
-                showNotification('대시보드가 업데이트되었습니다!', 'success');
+            loadMarketPrices().then(() => {
+                loadDashboardData().then(() => {
+                    showNotification('대시보드가 업데이트되었습니다!', 'success');
+                });
             });
         }
     </script>
