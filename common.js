@@ -18,6 +18,177 @@ export const db = getFirestore(app);
 
 export let currentUser = null;
 
+// ============================================
+// 애니메이션 토글 시스템
+// ============================================
+
+let animationsEnabled = true;
+
+// 애니메이션 토글 버튼 생성 및 초기화
+function initializeAnimationToggle() {
+    // 기존 토글 버튼이 있다면 제거
+    const existingToggle = document.querySelector('.animation-toggle');
+    if (existingToggle) {
+        existingToggle.remove();
+    }
+
+    // 애니메이션 토글 버튼 생성
+    const toggleContainer = document.createElement('div');
+    toggleContainer.className = 'animation-toggle';
+    toggleContainer.onclick = toggleAnimations;
+    
+    toggleContainer.innerHTML = `
+        <span class="animation-toggle-label">애니메이션</span>
+        <label class="animation-switch">
+            <input type="checkbox" id="animationToggle" ${animationsEnabled ? 'checked' : ''}>
+            <span class="animation-slider"></span>
+        </label>
+    `;
+    
+    document.body.appendChild(toggleContainer);
+    
+    // 체크박스 직접 클릭 이벤트
+    const checkbox = document.getElementById('animationToggle');
+    if (checkbox) {
+        checkbox.addEventListener('change', function(e) {
+            e.stopPropagation();
+            if (this.checked !== animationsEnabled) {
+                toggleAnimations();
+            }
+        });
+    }
+}
+
+// 애니메이션 토글 함수
+function toggleAnimations() {
+    animationsEnabled = !animationsEnabled;
+    
+    // 설정 저장
+    localStorage.setItem('animationsEnabled', animationsEnabled.toString());
+    
+    // 상태 업데이트
+    updateAnimationState();
+    
+    // 스위치 상태 업데이트
+    const checkbox = document.getElementById('animationToggle');
+    if (checkbox) {
+        checkbox.checked = animationsEnabled;
+    }
+    
+    // 피드백 제공
+    showNotification(
+        animationsEnabled ? 
+        '🎬 애니메이션이 활성화되었습니다' : 
+        '⚡ 성능 모드 활성화 (애니메이션 비활성화)',
+        animationsEnabled ? 'success' : 'info'
+    );
+}
+
+// 애니메이션 상태 업데이트
+function updateAnimationState() {
+    const body = document.body;
+    
+    if (animationsEnabled) {
+        body.classList.add('animations-enabled');
+    } else {
+        body.classList.remove('animations-enabled');
+    }
+}
+
+// 저장된 애니메이션 설정 로드
+function loadAnimationSettings() {
+    const savedAnimationState = localStorage.getItem('animationsEnabled');
+    
+    if (savedAnimationState !== null) {
+        animationsEnabled = savedAnimationState === 'true';
+    }
+    
+    updateAnimationState();
+}
+
+// 키보드 단축키 (Ctrl + A)
+function setupAnimationKeyboardShortcut() {
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'a') {
+            e.preventDefault();
+            toggleAnimations();
+        }
+    });
+}
+
+// 성능 최적화: 페이지 가시성 변경 시
+function setupPerformanceOptimizations() {
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden && animationsEnabled) {
+            // 탭이 숨겨질 때 애니메이션 일시 중지
+            document.body.style.animationPlayState = 'paused';
+        } else if (!document.hidden && animationsEnabled) {
+            // 탭이 다시 보일 때 애니메이션 재개
+            document.body.style.animationPlayState = 'running';
+        }
+    });
+}
+
+// 배터리 API 지원 시 자동 최적화 제안
+function setupBatteryOptimization() {
+    if ('getBattery' in navigator) {
+        navigator.getBattery().then(function(battery) {
+            function checkBatteryOptimization() {
+                if (battery.level < 0.2 && !battery.charging && animationsEnabled) {
+                    showNotification('🔋 배터리가 부족합니다. 성능 모드로 전환하시겠습니까?', 'info');
+                }
+            }
+            
+            battery.addEventListener('levelchange', checkBatteryOptimization);
+            battery.addEventListener('chargingchange', checkBatteryOptimization);
+        });
+    }
+}
+
+// FPS 모니터링 (개발 모드)
+function setupPerformanceMonitoring() {
+    let frameCount = 0;
+    let lastTime = Date.now();
+    
+    function monitor() {
+        frameCount++;
+        const currentTime = Date.now();
+        
+        if (currentTime - lastTime >= 1000) {
+            const fps = frameCount;
+            frameCount = 0;
+            lastTime = currentTime;
+            
+            // FPS가 너무 낮으면 콘솔에 경고
+            if (fps < 30 && animationsEnabled) {
+                console.warn('낮은 FPS 감지:', fps, '- 애니메이션 비활성화를 고려해보세요.');
+            }
+        }
+        
+        if (window.requestAnimationFrame) {
+            requestAnimationFrame(monitor);
+        }
+    }
+    
+    if (window.requestAnimationFrame) {
+        monitor();
+    }
+}
+
+// 애니메이션 시스템 전체 초기화
+function initializeAnimationSystem() {
+    loadAnimationSettings();
+    initializeAnimationToggle();
+    setupAnimationKeyboardShortcut();
+    setupPerformanceOptimizations();
+    setupBatteryOptimization();
+    setupPerformanceMonitoring();
+}
+
+// ============================================
+// 기존 권한 및 사용자 관리 시스템
+// ============================================
+
 // 권한 체크 함수들
 export function isAnonymousUser() {
     return currentUser && currentUser.isAnonymous;
@@ -148,6 +319,9 @@ function loadPageData() {
 
 // 로그아웃 기능
 document.addEventListener('DOMContentLoaded', function() {
+    // 애니메이션 시스템 초기화
+    initializeAnimationSystem();
+    
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
@@ -192,6 +366,7 @@ export function showNotification(message, type = 'success') {
     }, 3000);
 }
 
+// 게임 필터링 함수들
 export function getUserGameFilter(userEmail) {
     // 특정 사용자에게만 게임 필터 적용
     const restrictedUsers = {
@@ -229,3 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// 전역 함수로 애니메이션 토글 노출 (콘솔에서 사용 가능)
+window.toggleAnimations = toggleAnimations;
+window.getAnimationState = () => animationsEnabled;
